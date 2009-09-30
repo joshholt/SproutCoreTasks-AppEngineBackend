@@ -1,8 +1,13 @@
 #!/usr/bin/env python
+# 
+# Author: Joshua Holt
+# Date: 09-29-2009
+
+##############################################################################
+# 
+#   Prupose: To serve tasks & project to SG's Sproutcore Tasks application.
 #
-# Copyright 2008 Sprout Systems, Inc.
-#
-# Released under MIT License
+##############################################################################
 
 import wsgiref.handlers
 from django.utils import simplejson
