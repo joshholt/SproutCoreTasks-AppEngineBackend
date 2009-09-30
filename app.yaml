@@ -1,0 +1,34 @@
+application: tasks-sc
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+- url: /static/(.*)/detect-browser
+  static_files: static/\1/detect-browser
+  upload: static/(.*)/detect-browser
+  mime_type: text/javascript
+
+- url: /tasks-server/(..)
+  static_files: static/tasks/\1/index.html
+  upload: static/Tasks/(.*)/index.html
+  mime_type: text/html
+  
+- url: /tasks-server
+  static_files: static/tasks/en/index.html
+  upload: static/Tasks/index.html
+  mime_type: text/html
+
+- url: /
+  static_files: static/tasks/index.html
+  upload: static/tasks/index.html
+  mime_type: text/html
+  
+- url: /static
+  static_dir: static
+
+- url: /tasks
+  static_dir: static/tasks
+
+- url: /.*
+  script: main.py
