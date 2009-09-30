@@ -25,14 +25,14 @@ class User(db.Model):
 class Project(db.Model):
   name = db.StringProperty(required=True)
   timeLeft = db.StringProperty()
-  tasks = db.ListProperty(str)
+  tasks = db.ListProperty(int)
 
 class Task(db.Model):
   name = db.StringProperty(required=True)
   priority = db.StringProperty()
   effort = db.StringProperty()
-  submitter = db.StringProperty()
-  assignee = db.StringProperty()
+  submitter = db.IntegerProperty()
+  assignee = db.IntegerProperty()
   type = db.StringProperty()
   status = db.StringProperty()
   validation = db.StringProperty()
@@ -75,7 +75,7 @@ class UsersHandler(webapp.RequestHandler):
     user.put() # save
     
     guid = user.key().id_or_name()
-    new_url = "/tasks/%s.json" % guid
+    new_url = "/tasks-server/user/%s" % guid
     user_json["id"] = guid
     
     self.response.set_status(201, "User created")
@@ -86,7 +86,7 @@ class UsersHandler(webapp.RequestHandler):
 
 class UserHandler(webapp.RequestHandler):
   # retrieve the task with a given id
-  def get(self, guid, ext):
+  def get(self, guid):
     
     # find the matching task
     key = db.Key.from_path('Task', int(guid))
@@ -103,7 +103,7 @@ class UserHandler(webapp.RequestHandler):
       self.response.set_status(404, "Task not found")
   
   # Update an existing record
-  def put(self, guid, ext):
+  def put(self, guid):
     
     # find the matching task
     key = db.Key.from_path('Task', int(guid))
@@ -159,7 +159,7 @@ class TasksHandler(webapp.RequestHandler):
     # collect saved tasks
     tasks_json = []
     for task in Task.all():
-      task_json = { "id": "user/%s" % task.key().id_or_name(),
+      task_json = { "id": "task/%s" % task.key().id_or_name(),
         "name": task.name, "priority": task.priority, 
         "effort": task.effort, "submitter": task.submitter,
         "assignee": task.assignee, "type": task.type, "status": task.status,
@@ -172,23 +172,27 @@ class TasksHandler(webapp.RequestHandler):
   # Create a new User
   def post(self):
     # collect the data from the record
-    user_json = simplejson.loads(self.request.body)
+    task_json = simplejson.loads(self.request.body)
     #Make sure we have all the required params
-    if user_json.has_key('name') == False:
-      user_json['name'] = '(No Name)'
-    if user_json.has_key('loginName') == False:
-      user_json['loginName'] = 'NA'
-    if user_json.has_key('role') == False:
-      user_json['role'] = 'Developer'
-    user = User(name=user_json["name"], loginName=user_json["loginName"], role=user_json["role"])
-    user.put() # save
-    guid = user.key().id_or_name()
-    new_url = "/tasks/%s.json" % guid
-    user_json["id"] = guid
+    if task_json.has_key('name') == False:
+      task_json['name'] = '(No Name Task)'
+    task = Task(name=task_json["name"], 
+      priority=task_json["priority"] if task_json.has_key("priority") else None, 
+      effort=task_json["effort"] if task_json.has_key("effort") else None,
+      submitter=task_json["submitter"] if task_json.has_key("submitter") else None,
+      assignee=task_json["assignee"] if task_json.has_key("assignee") else None,
+      type=task_json["type"] if task_json.has_key("type") else None,
+      status=task_json["status"] if task_json.has_key("status") else None,
+      validation=task_json["validation"] if task_json.has_key("validation") else None,
+      description=task_json["description"] if task_json.has_key("description") else None )
+    task.put() # save
+    guid = task.key().id_or_name()
+    new_url = "/tasks-server/task/%s" % guid
+    task_json["id"] = guid
     self.response.set_status(201, "User created")
     self.response.headers['Location'] = new_url
     self.response.headers['Content-Type'] = 'text/json'
-    self.response.out.write(simplejson.dumps(user_json))  
+    self.response.out.write(simplejson.dumps(task_json))  
 
 
 class ProjectsHandler(webapp.RequestHandler):
@@ -197,7 +201,10 @@ class ProjectsHandler(webapp.RequestHandler):
     # collect saved tasks
     projects_json = []
     for project in Project.all():
-      project_json = { "id": "project/%s" % project.key().id_or_name(), "name": project.name, "timeLeft": project.timeLeft, "tasks": project.tasks }
+      project_json = { "id": "project/%s" % project.key().id_or_name(), 
+        "name": project.name, 
+        "timeLeft": project.timeLeft, 
+        "tasks": project.tasks }
       projects_json.append(project_json)
     # Set the response content type and dump the json
     self.response.headers['Content-Type'] = 'application/json'
@@ -210,11 +217,9 @@ class ProjectsHandler(webapp.RequestHandler):
     #Make sure we have all the required params
     if project_json.has_key('name') == False:
       project_json['name'] = '(No Name Project)'
-    if project_json.has_key('timeLeft') == False:
-      project_json['timeLeft'] = 0
-    if project_json.has_key('tasks') == False:
-      project_json['tasks'] = []
-    project = Project(name=project_json["name"], timeLeft=project_json["timeLeft"], tasks=project_json["tasks"])
+    project = Project(name=project_json["name"], 
+      timeLeft=project_json["timeLeft"] if task_json.has_key("timeLeft") else None, 
+      tasks=project_json["tasks"] if task_json.has_key("timeLeft") else [])
     project.put() # save
     guid = project.key().id_or_name()
     new_url = "/tasks-server/project/%s" % guid
