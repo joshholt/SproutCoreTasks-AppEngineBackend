@@ -1,42 +1,54 @@
 #!/usr/bin/env python
-# 
+#
 # Author: Joshua Holt
 # Date: 09-29-2009
 
-##############################################################################
-# 
-#   Prupose: To serve tasks & project to SG's Sproutcore Tasks application.
-#
-##############################################################################
+""" Prupose: To serve tasks & project to SG's Sproutcore Tasks application.
+    ********* NOTE ***************
+    This Code is not DRY is has been years since I've touched python
+     ruby spoiled me :)
+     
+     Trying figure out a way to loop through model_instance.properties()
+     and actually be able to use that to set the  model instance attrs
+     
+     Currently I am only able to do the 1/2 of the DRYing up that I want
+     to do.
+     
+     This is what I am trying to do in my helpers module:
+     
+     def apply_json_to_model_instance(model, json):
+       props = model.properties()
+       for key in props:
+         if json.has_key(key):
+           model.key = json[key]
+        
+        model.put()
+        
+     
+     But it seems that you cannot do this b/c I remember that you cannot
+     specify an object's attribute as a string and model instances are not
+     subscriptable.
+     
+     If anyone has any tips I am open for suggestions.
+     
+     thanks,
+     Joshua Holt
+"""
 
+# App Engine Imports
 import wsgiref.handlers
-from django.utils import simplejson
-
 from google.appengine.ext import webapp
 from google.appengine.ext import db
+from django.utils import simplejson
 
-class User(db.Model):
-  name = db.StringProperty(required=True)
-  loginName = db.StringProperty(required=True)
-  role = db.StringProperty(required=True)
-  preferences = db.TextProperty()
-  authToken = db.StringProperty()
+# Data Model Imports
+import models
+from models import User
+from models import Task
+from models import Project
 
-class Project(db.Model):
-  name = db.StringProperty(required=True)
-  timeLeft = db.StringProperty()
-  tasks = db.ListProperty(int)
-
-class Task(db.Model):
-  name = db.StringProperty(required=True)
-  priority = db.StringProperty()
-  effort = db.StringProperty()
-  submitter = db.IntegerProperty()
-  assignee = db.IntegerProperty()
-  type = db.StringProperty()
-  status = db.StringProperty()
-  validation = db.StringProperty()
-  description = db.TextProperty()
+# Helper Imports
+import helpers
 
 class UsersHandler(webapp.RequestHandler):
   
@@ -46,7 +58,11 @@ class UsersHandler(webapp.RequestHandler):
     # collect saved tasks
     users_json = []
     for user in User.all():
-      user_json = { "id": "user/%s" % user.key().id_or_name(), "name": user.name, "loginName": user.loginName, "role": user.role, "preferences": {}, "authToken": " " }
+      user_json = { "id": "user/%s" % user.key().id_or_name(),
+        "name": user.name,
+        "loginName": user.loginName, "role": user.role,
+        "preferences": {}, "authToken": " " }
+      
       users_json.append(user_json)
     
     # Set the response content type and dump the json
@@ -55,24 +71,14 @@ class UsersHandler(webapp.RequestHandler):
   
   # Create a new User
   def post(self):
-    # This normalized dict for the incomming json
-    incomming = dict()
     
     # collect the data from the record
     user_json = simplejson.loads(self.request.body)
     
-    #Make sure we have all the required params
-    if user_json.has_key('name') == False:
-      user_json['name'] = '(No Name)'
-    
-    if user_json.has_key('loginName') == False:
-      user_json['loginName'] = 'NA'
-    
-    if user_json.has_key('role') == False:
-      user_json['role'] = 'Developer'
-    
-    user = User(name=user_json["name"], loginName=user_json["loginName"], role=user_json["role"])
-    user.put() # save
+    # create a user
+    user = helpers.apply_json_to_user(User(), user_json)
+    # save the new user
+    user.put()
     
     guid = user.key().id_or_name()
     new_url = "/tasks-server/user/%s" % guid
@@ -89,68 +95,53 @@ class UserHandler(webapp.RequestHandler):
   def get(self, guid):
     
     # find the matching task
-    key = db.Key.from_path('Task', int(guid))
-    task = db.get(key)
-    if not task == None:
-      guid = "/tasks/%s.json" % task.key().id_or_name()
-      task_json = { "guid": guid, "order": task.order, "title": task.title, "isDone": task.is_done, "type": "Task" }
+    key = db.Key.from_path('User', int(guid))
+    user = db.get(key)
+    if not user == None:
+      guid = "user/%s" % user.key().id_or_name()
       
-      rec = { "content": task_json, "self": guid }
+      user_json = { "id": "%s" % guid,
+        "name": user.name,
+        "loginName": user.loginName, "role": user.role,
+        "preferences": user.preferences if user.preferences != None else {},
+        "authToken": user.authToken if user.authToken != None else "" }
+      
       self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(rec))
+      self.response.out.write(simplejson.dumps(user_json))
     
     else:
-      self.response.set_status(404, "Task not found")
+      self.response.set_status(404, "User not found")
   
   # Update an existing record
   def put(self, guid):
     
-    # find the matching task
-    key = db.Key.from_path('Task', int(guid))
-    task = db.get(key)
-    if not task == None:
+    # find the matching user
+    key = db.Key.from_path('User', int(guid))
+    user = db.get(key)
+    if not user == None:
       
       # collect the data from the record
-      rec = simplejson.loads(self.request.body)
-      if rec.has_key('content'):
-        
-        # update record with passed data.
-        task_json = rec["content"]
-        did_change = False
-        
-        if task_json.has_key('title'):
-          task.title = task_json['title']
-          did_change = True
-        
-        if task_json.has_key('order'):
-          task.order = task_json['order']
-          did_change = True
-        
-        if task_json.has_key('isDone'):
-          task.is_done = task_json['isDone']
-          did_change = True
-        
-        if did_change:
-          task.put() # save
-        
-        # return the same record...
-        self.response.headers['Content-Type'] = 'application/json'
-        self.response.out.write(simplejson.dumps(rec))
-      
-      else:
-        self.response.set_status(400, "content required")
+      user_json = simplejson.loads(self.request.body)
+      # update the record
+      user = helpers.apply_json_to_user(user, user_json)
+      # save the record
+      user.put()
+      # return the same record...
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(user_json))
     
     else:
-      self.response.set_status(404, "Task not found")
+      self.response.set_status(404, "User not found")
   
-  # delete the task with a given id
-  def delete(self, guid, ext):
+  # delete the user with a given id
+  def delete(self, guid):
     
     # find the matching task and delete it if found
-    key = db.Key.from_path('Task', int(guid))
-    task = db.get(key)
-    if not task == None:
-      task.delete()
+    key = db.Key.from_path('User', int(guid))
+    user = db.get(key)
+    if not user == None:
+      user.delete()
+  
 
 
 class TasksHandler(webapp.RequestHandler):
@@ -160,39 +151,82 @@ class TasksHandler(webapp.RequestHandler):
     tasks_json = []
     for task in Task.all():
       task_json = { "id": "task/%s" % task.key().id_or_name(),
-        "name": task.name, "priority": task.priority, 
+        "name": task.name, "priority": task.priority,
         "effort": task.effort, "submitter": task.submitter,
         "assignee": task.assignee, "type": task.type, "status": task.status,
         "validation": task.validation, "description": task.description }
+      
       tasks_json.append(task_json)
+    
     # Set the response content type and dump the json
     self.response.headers['Content-Type'] = 'application/json'
     self.response.out.write(simplejson.dumps(tasks_json))
   
-  # Create a new User
+  # Create a new Task
   def post(self):
+    
     # collect the data from the record
     task_json = simplejson.loads(self.request.body)
-    #Make sure we have all the required params
-    if task_json.has_key('name') == False:
-      task_json['name'] = '(No Name Task)'
-    task = Task(name=task_json["name"], 
-      priority=task_json["priority"] if task_json.has_key("priority") else None, 
-      effort=task_json["effort"] if task_json.has_key("effort") else None,
-      submitter=task_json["submitter"] if task_json.has_key("submitter") else None,
-      assignee=task_json["assignee"] if task_json.has_key("assignee") else None,
-      type=task_json["type"] if task_json.has_key("type") else None,
-      status=task_json["status"] if task_json.has_key("status") else None,
-      validation=task_json["validation"] if task_json.has_key("validation") else None,
-      description=task_json["description"] if task_json.has_key("description") else None )
-    task.put() # save
+    # create a new taks with the passed in json
+    task = helpers.apply_json_to_task(Task(),task_json)
+    # save task
+    task.put()
+        
     guid = task.key().id_or_name()
     new_url = "/tasks-server/task/%s" % guid
     task_json["id"] = guid
-    self.response.set_status(201, "User created")
+    
+    self.response.set_status(201, "Task created")
     self.response.headers['Location'] = new_url
     self.response.headers['Content-Type'] = 'text/json'
-    self.response.out.write(simplejson.dumps(task_json))  
+    self.response.out.write(simplejson.dumps(task_json))
+  
+
+
+class TaskHandler(webapp.RequestHandler):
+  """Deals with a single Task item""" 
+  def get(self, guid):
+    """Retrieves a single task record and returns the JSON"""
+    key = db.Key.from_path('Task', int(guid))
+    task = db.get(key)
+    if not task == None:
+      guid = "task/%s" % task.key().id_or_name()
+      task_json = { "id": "%s" % guid, "name": task.name, 
+        "priority": task.priority, "effort": task.effort, 
+        "submitter": task.submitter, "assignee": task.assignee, 
+        "type": task.type, "status": task.status,
+        "validation": task.validation, "description": task.description }
+        
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(task_json))
+    else:
+      self.response.set_status(404, "Task not found")
+  
+  def put(self, guid):
+    """Update the task with the given id"""
+    key = db.Key.from_path('Task', int(guid))
+    task = db.get(key)
+    if not task == None:
+      # collect the json from the request
+      task_json = simplejson.loads(self.request.body)
+      # update the project record
+      task = apply_json_to_project(task, task_json)
+      # save the updated data
+      task.put()
+      # return the same record...
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(task_json))
+    else:
+      self.response.set_status(404, "Task not found")
+  
+  def delete(self, guid):
+    """Delete the task with the given id"""
+    # search for the Project and delete if found
+    key = db.Key.from_path('Task', int(guid))
+    task = db.get(key)
+    if not task == None:
+      task.delete()
+  
 
 
 class ProjectsHandler(webapp.RequestHandler):
@@ -201,11 +235,13 @@ class ProjectsHandler(webapp.RequestHandler):
     # collect saved tasks
     projects_json = []
     for project in Project.all():
-      project_json = { "id": "project/%s" % project.key().id_or_name(), 
-        "name": project.name, 
-        "timeLeft": project.timeLeft, 
+      project_json = { "id": "project/%s" % project.key().id_or_name(),
+        "name": project.name,
+        "timeLeft": project.timeLeft,
         "tasks": project.tasks }
+      
       projects_json.append(project_json)
+    
     # Set the response content type and dump the json
     self.response.headers['Content-Type'] = 'application/json'
     self.response.out.write(simplejson.dumps(projects_json))
@@ -214,16 +250,16 @@ class ProjectsHandler(webapp.RequestHandler):
   def post(self):
     # collect the data from the record
     project_json = simplejson.loads(self.request.body)
-    #Make sure we have all the required params
-    if project_json.has_key('name') == False:
-      project_json['name'] = '(No Name Project)'
-    project = Project(name=project_json["name"], 
-      timeLeft=project_json["timeLeft"] if task_json.has_key("timeLeft") else None, 
-      tasks=project_json["tasks"] if task_json.has_key("timeLeft") else [])
-    project.put() # save
+    
+    # create a new project
+    project = apply_json_to_project(Project(), project_json)
+    # save project
+    project.save()
+    
     guid = project.key().id_or_name()
     new_url = "/tasks-server/project/%s" % guid
     project_json["id"] = guid
+    
     self.response.set_status(201, "Project created")
     self.response.headers['Location'] = new_url
     self.response.headers['Content-Type'] = 'text/json'
@@ -231,9 +267,59 @@ class ProjectsHandler(webapp.RequestHandler):
   
 
 
+class ProjectHandler(webapp.RequestHandler):
+  """Deals with a single project item"""
+    
+  # Retrieve a single project record
+  def get(self, guid):
+    """Retrieves a single project record and returns the JSON"""
+    key = db.Key.from_path('Project', int(guid))
+    project = db.get(key)
+    if not project == None:
+      guid = "project/%s" % project.key().id_or_name()
+      
+      project_json = { "id": "%s" % guid, "name": project.timeLeft,
+        "tasks": project.tasks }
+      
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(project_json))
+    
+    else:
+      self.response.set_status(404, "Project not found")
+  
+  def put(self, guid):
+    """Update the project with the given id"""
+    key = db.Key.from_path('Project', int(guid))
+    project = db.get(key)
+    if not project == None:
+      # collect the json from the request
+      project_json = simplejson.loads(self.request.body)
+      # update the project record
+      project = apply_json_to_project(project, project_json)
+      # save the updated data
+      project.put()
+      
+      # return the same record...
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(project_json))
+      
+    else:
+      self.response.set_status(404, "Project not found")
+  
+  def delete(self, guid):
+    """Delete the project with the given id"""
+    
+    # search for the Project and delete if found
+    key = db.Key.from_path('Project', int(guid))
+    project = db.get(key)
+    if not project == None:
+      project.delete()
+  
+
+
 def main():
-  application = webapp.WSGIApplication([(r'/tasks-server/user?$', UsersHandler), 
-    (r'/tasks-server/project?$', ProjectsHandler), 
+  application = webapp.WSGIApplication([(r'/tasks-server/user?$', UsersHandler),
+    (r'/tasks-server/project?$', ProjectsHandler),
     (r'/tasks-server/task?$', TasksHandler),
     (r'/tasks/([^\.]+)(\.json)?$', UserHandler)],
                                        debug=True)
