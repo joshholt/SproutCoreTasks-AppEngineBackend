@@ -9,12 +9,12 @@ handlers:
   upload: static/(.*)/detect-browser
   mime_type: text/javascript
 
-- url: /tasks-server/(..)
+- url: /tasks/(..)
   static_files: static/tasks/\1/index.html
   upload: static/Tasks/(.*)/index.html
   mime_type: text/html
   
-- url: /tasks-server
+- url: /tasks
   static_files: static/tasks/en/index.html
   upload: static/Tasks/index.html
   mime_type: text/html
