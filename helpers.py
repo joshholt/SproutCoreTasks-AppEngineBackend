@@ -30,7 +30,7 @@ def apply_json_to_task(model, jobj):
   model.priority    = jobj['priority']    if jobj.has_key('priority')     else None
   model.effort      = jobj['effort']      if jobj.has_key('effort')       else None
   model.submitter   = jobj['submitter']   if jobj.has_key('submitter')    else None
-  model.assignee    = jobj['authToken']   if jobj.has_key('authToken')    else None
+  model.assignee    = jobj['assignee']    if jobj.has_key('assignee')     else None
   model.type        = jobj['type']        if jobj.has_key('type')         else None
   model.status      = jobj['status']      if jobj.has_key('status')       else None
   model.validation  = jobj['validation']  if jobj.has_key('validation')   else None
@@ -52,3 +52,4 @@ def apply_json_to_project(model, jobj):
   model.tasks     = jobj['tasks']     if jobj.has_key('tasks')    else None
   
   return model
+  

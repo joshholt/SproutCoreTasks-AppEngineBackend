@@ -110,7 +110,7 @@ class UserHandler(webapp.RequestHandler):
       self.response.out.write(simplejson.dumps(user_json))
     
     else:
-      self.response.set_status(404, "User not found")
+      self.response.set_status(404, "User not found [%s]" % guid)
   
   # Update an existing record
   def put(self, guid):
@@ -210,7 +210,7 @@ class TaskHandler(webapp.RequestHandler):
       # collect the json from the request
       task_json = simplejson.loads(self.request.body)
       # update the project record
-      task = apply_json_to_project(task, task_json)
+      task = helpers.apply_json_to_task(task, task_json)
       # save the updated data
       task.put()
       # return the same record...
@@ -295,7 +295,7 @@ class ProjectHandler(webapp.RequestHandler):
       # collect the json from the request
       project_json = simplejson.loads(self.request.body)
       # update the project record
-      project = apply_json_to_project(project, project_json)
+      project = helpers.apply_json_to_project(project, project_json)
       # save the updated data
       project.put()
       
@@ -321,7 +321,9 @@ def main():
   application = webapp.WSGIApplication([(r'/tasks-server/user?$', UsersHandler),
     (r'/tasks-server/project?$', ProjectsHandler),
     (r'/tasks-server/task?$', TasksHandler),
-    (r'/tasks/([^\.]+)(\.json)?$', UserHandler)],
+    (r'/tasks-server/user/([^\.]+)?$', UserHandler),
+    (r'/tasks-server/project/([^\.]+)?$', ProjectHandler),
+    (r'/tasks-server/task/([^\.]+)?$', TaskHandler)],
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
