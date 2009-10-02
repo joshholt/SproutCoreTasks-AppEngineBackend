@@ -14,7 +14,7 @@ def apply_json_to_user(model, jobj):
   model.role        = jobj['role']        if jobj.has_key('role')         else "_Developer"
   
   # Then take care of the optional properties  
-  model.preferences = jobj['preferences'] if jobj.has_key('preferences')  else None
+  #model.preferences = jobj['preferences'] if jobj.has_key('preferences')  else None --> Not Used Yet
   model.authToken   = jobj['authToken']   if jobj.has_key('authToken')    else None
   
   return model

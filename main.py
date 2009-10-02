@@ -254,7 +254,7 @@ class ProjectsHandler(webapp.RequestHandler):
     project_json = simplejson.loads(self.request.body)
     
     # create a new project
-    project = apply_json_to_project(Project(), project_json)
+    project = helpers.apply_json_to_project(Project(), project_json)
     # save project
     project.save()
     
