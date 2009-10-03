@@ -3,7 +3,13 @@
 """ Prupose: To serve tasks & project to SG's Sproutcore Tasks application.
     Author: Joshua Holt
     Date: 09-30-2009
-    Last Modified: 09-30-2009
+    Last Modified: 10-03-2009
+    
+    ********* SOLVED *************
+    
+    I've solved the issue below.. I had forgotten that python and a builtin 
+    function "setattr(obj, attr, val)". If you want to see how it DRYed up
+    the code you can look through the commit log.
     
     
     ********* NOTE ***************
@@ -78,7 +84,7 @@ class UsersHandler(webapp.RequestHandler):
     user_json = simplejson.loads(self.request.body)
     
     # create a user
-    user = helpers.apply_json_to_user(User(), user_json)
+    user = helpers.apply_json_to_model_instance(User(), user_json)
     # save the new user
     user.put()
     
@@ -125,7 +131,7 @@ class UserHandler(webapp.RequestHandler):
       # collect the data from the record
       user_json = simplejson.loads(self.request.body)
       # update the record
-      user = helpers.apply_json_to_user(user, user_json)
+      user = helpers.apply_json_to_model_instance(user, user_json)
       # save the record
       user.put()
       # return the same record...
@@ -170,7 +176,7 @@ class TasksHandler(webapp.RequestHandler):
     # collect the data from the record
     task_json = simplejson.loads(self.request.body)
     # create a new taks with the passed in json
-    task = helpers.apply_json_to_task(Task(),task_json)
+    task = helpers.apply_json_to_model_instance(Task(),task_json)
     # save task
     task.put()
         
@@ -212,7 +218,7 @@ class TaskHandler(webapp.RequestHandler):
       # collect the json from the request
       task_json = simplejson.loads(self.request.body)
       # update the project record
-      task = helpers.apply_json_to_task(task, task_json)
+      task = helpers.apply_json_to_model_instance(task, task_json)
       # save the updated data
       task.put()
       # return the same record...
@@ -254,7 +260,7 @@ class ProjectsHandler(webapp.RequestHandler):
     project_json = simplejson.loads(self.request.body)
     
     # create a new project
-    project = helpers.apply_json_to_project(Project(), project_json)
+    project = helpers.apply_json_to_model_instance(Project(), project_json)
     # save project
     project.save()
     
@@ -297,7 +303,7 @@ class ProjectHandler(webapp.RequestHandler):
       # collect the json from the request
       project_json = simplejson.loads(self.request.body)
       # update the project record
-      project = helpers.apply_json_to_project(project, project_json)
+      project = helpers.apply_json_to_model_instance(project, project_json)
       # save the updated data
       project.put()
       
