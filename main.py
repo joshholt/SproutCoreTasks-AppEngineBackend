@@ -69,7 +69,7 @@ class UsersHandler(webapp.RequestHandler):
       user_json = { "id": "user/%s" % user.key().id_or_name(),
         "name": user.name,
         "loginName": user.loginName, "role": user.role,
-        "preferences": {}, "authToken": " " }
+        "preferences": {}, "authToken": "", "emailAddress": user.emailAddress }
       
       users_json.append(user_json)
     
@@ -112,7 +112,8 @@ class UserHandler(webapp.RequestHandler):
         "name": user.name,
         "loginName": user.loginName, "role": user.role,
         "preferences": user.preferences if user.preferences != None else {},
-        "authToken": user.authToken if user.authToken != None else "" }
+        "authToken": user.authToken if user.authToken != None else "",
+        "emailAddress": user.emailAddress if user.emailAddress != None else "" }
       
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(user_json))

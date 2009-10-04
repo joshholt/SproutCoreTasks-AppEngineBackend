@@ -12,6 +12,8 @@ class User(db.Model):
   loginName = db.StringProperty(required=True, default="(NA)")
   role = db.StringProperty(required=True, default="_Other")
   #preferences = db.StringProperty() -- NOT Used yet.
+  emailAddress = db.EmailProperty()
+  password = db.StringProperty()
   authToken = db.StringProperty()
 
 
