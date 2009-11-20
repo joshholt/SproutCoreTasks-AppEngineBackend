@@ -3,7 +3,7 @@
 """ Prupose: To serve tasks & project to SG's Sproutcore Tasks application.
     Author: Joshua Holt
     Date: 09-30-2009
-    Last Modified: 10-03-2009
+    Last Modified: 11-20-2009
     
     ********* SOLVED *************
     
@@ -13,7 +13,7 @@
     
     
     ********* NOTE ***************
-    This Code is not DRY is has been years since I've touched python
+    This Code is not DRY it has been years since I've touched python
      ruby spoiled me :)
      
      Trying figure out a way to loop through model_instance.properties()
@@ -66,10 +66,12 @@ class UsersHandler(webapp.RequestHandler):
     # collect saved tasks
     users_json = []
     for user in User.all():
-      user_json = { "id": "user/%s" % user.key().id_or_name(),
+      user_json = { "id": "%s" % user.key().id_or_name(),
         "name": user.name,
         "loginName": user.loginName, "role": user.role,
-        "preferences": {}, "authToken": "", "emailAddress": user.emailAddress }
+        "preferences": {}, "authToken": "", "email": user.email, 
+        "createdAt": user.createdAt if user.createdAt != None else 0, 
+        "updatedAt": user.updatedAt if user.updatedAt != None else 0 }
       
       users_json.append(user_json)
     
@@ -106,14 +108,16 @@ class UserHandler(webapp.RequestHandler):
     key = db.Key.from_path('User', int(guid))
     user = db.get(key)
     if not user == None:
-      guid = "user/%s" % user.key().id_or_name()
+      guid = "%s" % user.key().id_or_name()
       
       user_json = { "id": "%s" % guid,
         "name": user.name,
         "loginName": user.loginName, "role": user.role,
         "preferences": user.preferences if user.preferences != None else {},
         "authToken": user.authToken if user.authToken != None else "",
-        "emailAddress": user.emailAddress if user.emailAddress != None else "" }
+        "email": user.email if user.email != None else "",
+        "createdAt": user.createdAt if user.createdAt != None else 0, 
+        "updatedAt": user.updatedAt if user.updatedAt != None else 0 }
       
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(user_json))
@@ -159,11 +163,14 @@ class TasksHandler(webapp.RequestHandler):
     # collect saved tasks
     tasks_json = []
     for task in Task.all():
-      task_json = { "id": "task/%s" % task.key().id_or_name(),
+      task_json = { "id": "%s" % task.key().id_or_name(),
         "name": task.name, "priority": task.priority,
-        "effort": task.effort, "submitter": task.submitter,
-        "assignee": task.assignee, "type": task.type, "status": task.status,
-        "validation": task.validation, "description": task.description }
+        "projectId": task.projectId,
+        "effort": task.effort, "submitterId": task.submitterId,
+        "assigneeId": task.assigneeId, "type": task.type, "developmentStatus": task.developmentStatus,
+        "validation": task.validation, "description": task.description,
+        "createdAt": task.createdAt if task.createdAt != None else 0, 
+        "updatedAt": task.updatedAt if task.updatedAt != None else 0 }
       
       tasks_json.append(task_json)
     
@@ -199,12 +206,15 @@ class TaskHandler(webapp.RequestHandler):
     key = db.Key.from_path('Task', int(guid))
     task = db.get(key)
     if not task == None:
-      guid = "task/%s" % task.key().id_or_name()
+      guid = "%s" % task.key().id_or_name()
       task_json = { "id": "%s" % guid, "name": task.name, 
-        "priority": task.priority, "effort": task.effort, 
-        "submitter": task.submitter, "assignee": task.assignee, 
-        "type": task.type, "status": task.status,
-        "validation": task.validation, "description": task.description }
+        "priority": task.priority, "effort": task.effort,
+        "projectId": task.projectId,
+        "submitterId": task.submitterId, "assigneeId": task.assigneeId, 
+        "type": task.type, "developmentStatus": task.developmentStatus,
+        "validation": task.validation, "description": task.description,
+        "createdAt": task.createdAt if task.createdAt != None else 0, 
+        "updatedAt": task.updatedAt if task.updatedAt != None else 0 }
         
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(task_json))
@@ -244,10 +254,12 @@ class ProjectsHandler(webapp.RequestHandler):
     # collect saved tasks
     projects_json = []
     for project in Project.all():
-      project_json = { "id": "project/%s" % project.key().id_or_name(),
+      project_json = { "id": "%s" % project.key().id_or_name(),
         "name": project.name,
+        "description": project.description,
         "timeLeft": project.timeLeft,
-        "tasks": project.tasks }
+        "createdAt": project.createdAt if project.createdAt != None else 0, 
+        "updatedAt": project.updatedAt if project.updatedAt != None else 0 }
       
       projects_json.append(project_json)
     
@@ -285,10 +297,12 @@ class ProjectHandler(webapp.RequestHandler):
     key = db.Key.from_path('Project', int(guid))
     project = db.get(key)
     if not project == None:
-      guid = "project/%s" % project.key().id_or_name()
+      guid = "%s" % project.key().id_or_name()
       
       project_json = { "id": "%s" % guid, "name": project.timeLeft,
-        "tasks": project.tasks }
+        "description": project.description,
+        "createdAt": project.createdAt if project.createdAt != None else 0, 
+        "updatedAt": project.updatedAt if project.updatedAt != None else 0 }
       
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(project_json))

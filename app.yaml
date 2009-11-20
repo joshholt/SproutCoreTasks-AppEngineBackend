@@ -15,13 +15,13 @@ handlers:
   mime_type: text/html
 
 - url: /tasks
-  static_files: static/tasks/en/3fe1cc03c62faaaf805f0825cb3363be936e5ebc/index.html
-  upload: static/tasks/en/3fe1cc03c62faaaf805f0825cb3363be936e5ebc/index.html
+  static_files: static/tasks/en/3b/index.html
+  upload: static/tasks/en/3b/index.html
   mime_type: text/html
 
 - url: /
-  static_files: static/tasks/en/3fe1cc03c62faaaf805f0825cb3363be936e5ebc/index.html
-  upload: static/tasks/en/3fe1cc03c62faaaf805f0825cb3363be936e5ebc/index.html
+  static_files: static/tasks/en/3b/index.html
+  upload: static/tasks/en/3b/index.html
   mime_type: text/html
   
 - url: /static
