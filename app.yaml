@@ -1,4 +1,4 @@
-application: tasks-sc
+application: tasks-demo
 version: 2
 runtime: python
 api_version: 1
@@ -15,13 +15,13 @@ handlers:
   mime_type: text/html
 
 - url: /tasks
-  static_files: static/tasks/en/3b/index.html
-  upload: static/tasks/en/3b/index.html
+  static_files: static/tasks/en/Beta/index.html
+  upload: static/tasks/en/Beta/index.html
   mime_type: text/html
 
 - url: /
-  static_files: static/tasks/en/3b/index.html
-  upload: static/tasks/en/3b/index.html
+  static_files: static/tasks/en/Beta/index.html
+  upload: static/tasks/en/Beta/index.html
   mime_type: text/html
   
 - url: /static

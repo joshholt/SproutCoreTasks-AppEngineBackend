@@ -1,7 +1,7 @@
 """ This File holds the model definitions used in this app.
   Author: Joshua Holt 
   Date: 09-30-2009
-  Last Modified: 11-20-2009
+  Last Modified: 12-08-2009
 """
 
 from google.appengine.ext import db
@@ -35,8 +35,8 @@ class Task(db.Model):
   projectId = db.IntegerProperty()
   priority = db.StringProperty(default="_Medium")
   effort = db.StringProperty()
-  submitterId = db.StringProperty()
-  assigneeId = db.StringProperty()
+  submitterId = db.IntegerProperty() # These keep changing
+  assigneeId = db.IntegerProperty()  # These keep changing
   type = db.StringProperty(default="_Other")
   developmentStatus = db.StringProperty(default="_Planned")
   validation = db.StringProperty(default="_Untested")
