@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
-""" Prupose: To Send Chat Notifications based on certain task conditions.
+""" Prupose: To Send Notifications based on certain task conditions.
     Author: Joshua Holt
     Date: 12-09-2009
-    Last Modified: 12-09-2009
+    Last Modified: 12-10-2009
 """
 
 from google.appengine.api import xmpp
+from google.appengine.api import mail
 
 def send_test_chat():
   """sends a test Instant Message"""
@@ -32,3 +33,20 @@ def send_test_chat():
     return "Unable to send message"
   else:
     return "Sent Message"
+
+
+def send_test_email():
+  """sends a test email"""
+  message = mail.EmailMessage(sender="tasks@eloqua.com",
+                              subject="Tasks Notifications: Example Email")
+  message.to = "josh.holt@eloqua.com"
+  message.body = """
+  This is an example email that will be sent from the Tasks app when
+  a notification needs to be sent. These notifications may be 
+  bugs/bug-fixes/etc...
+  
+  Please let us know if you have any questions.
+  
+  The Tasks Team
+  """
+  message.send()

@@ -345,8 +345,8 @@ class ChatHandler(webapp.RequestHandler):
   def get(self):
     """docstring for get"""
     notification.send_test_chat()
-    self.response.headers['Content-Type'] = 'plain/text'
-    self.response.out.write("Sending Notification...")
+    notification.send_test_email()
+    self.response.set_status(200, "Notification Sent")
   
 
 
