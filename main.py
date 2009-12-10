@@ -56,7 +56,7 @@ from models import Task
 from models import Project
 
 # Helper Imports
-import helpers,mail
+import helpers,notification
 
 class UsersHandler(webapp.RequestHandler):
   
@@ -340,13 +340,13 @@ class ProjectHandler(webapp.RequestHandler):
   
 
 
-class EmailHandler(webapp.RequestHandler):
-  """docstring for EmailHandler"""
+class ChatHandler(webapp.RequestHandler):
+  """docstring for ChatHandler"""
   def get(self):
     """docstring for get"""
-    mail.send_test_email()
+    notification.send_test_chat()
     self.response.headers['Content-Type'] = 'plain/text'
-    self.response.out.write("Sending Email...")
+    self.response.out.write("Sending Notification...")
   
 
 
@@ -357,7 +357,7 @@ def main():
     (r'/tasks-server/user/([^\.]+)?$', UserHandler),
     (r'/tasks-server/project/([^\.]+)?$', ProjectHandler),
     (r'/tasks-server/task/([^\.]+)?$', TaskHandler),
-    (r'/mailtest', EmailHandler)],debug=True)
+    (r'/notification-test', ChatHandler)],debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
 

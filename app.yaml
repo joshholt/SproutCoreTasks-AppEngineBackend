@@ -26,6 +26,9 @@ handlers:
   
 - url: /static
   static_dir: static
+  
+- url: /mailtest
+  script: main.python
 
 - url: /tasks
   static_dir: static/tasks
