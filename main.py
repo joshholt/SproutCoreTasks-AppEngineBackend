@@ -345,6 +345,8 @@ class EmailHandler(webapp.RequestHandler):
   def get(self):
     """docstring for get"""
     mail.send_test_email()
+    self.response.headers['Content-Type'] = 'plain/text'
+    self.response.out.write("Sending Email...")
   
 
 
@@ -355,7 +357,7 @@ def main():
     (r'/tasks-server/user/([^\.]+)?$', UserHandler),
     (r'/tasks-server/project/([^\.]+)?$', ProjectHandler),
     (r'/tasks-server/task/([^\.]+)?$', TaskHandler),
-    (r'/mail-test', EmailHandler)],debug=True)
+    (r'/mailtest', EmailHandler)],debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
 
