@@ -56,7 +56,7 @@ from models import Task
 from models import Project
 
 # Helper Imports
-import helpers
+import helpers,mail
 
 class UsersHandler(webapp.RequestHandler):
   
@@ -340,14 +340,22 @@ class ProjectHandler(webapp.RequestHandler):
   
 
 
+class EmailHandler(webapp.RequestHandler):
+  """docstring for EmailHandler"""
+  def get(self):
+    """docstring for get"""
+    mail.send_test_email()
+  
+
+
 def main():
   application = webapp.WSGIApplication([(r'/tasks-server/user?$', UsersHandler),
     (r'/tasks-server/project?$', ProjectsHandler),
     (r'/tasks-server/task?$', TasksHandler),
     (r'/tasks-server/user/([^\.]+)?$', UserHandler),
     (r'/tasks-server/project/([^\.]+)?$', ProjectHandler),
-    (r'/tasks-server/task/([^\.]+)?$', TaskHandler)],
-                                       debug=True)
+    (r'/tasks-server/task/([^\.]+)?$', TaskHandler),
+    (r'/mail-test', EmailHandler)],debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
 
