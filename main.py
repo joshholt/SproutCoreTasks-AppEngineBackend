@@ -69,7 +69,8 @@ class UsersHandler(webapp.RequestHandler):
       user_json = { "id": "%s" % user.key().id_or_name(),
         "name": user.name,
         "loginName": user.loginName, "role": user.role,
-        "preferences": {}, "authToken": "", "email": user.email, 
+        "preferences": {}, "email": user.email, 
+        "authToken": "", "password": user.password, 
         "createdAt": user.createdAt if user.createdAt != None else 0, 
         "updatedAt": user.updatedAt if user.updatedAt != None else 0 }
       
