@@ -62,23 +62,27 @@ class UsersHandler(webapp.RequestHandler):
   
   # Retrieve a list of all the Users.
   def get(self):
-    
-    # collect saved tasks
-    users_json = []
-    for user in User.all():
-      user_json = { "id": "%s" % user.key().id_or_name(),
-        "name": user.name,
-        "loginName": user.loginName, "role": user.role,
-        "preferences": {}, "email": user.email, 
-        "authToken": "", "password": user.password, 
-        "createdAt": user.createdAt if user.createdAt != None else 0, 
-        "updatedAt": user.updatedAt if user.updatedAt != None else 0 }
-      
-      users_json.append(user_json)
-    
-    # Set the response content type and dump the json
-    self.response.headers['Content-Type'] = 'application/json'
-    self.response.out.write(simplejson.dumps(users_json))
+    if  len(self.request.params) == 0:
+      users_json = helpers.build_list_json(User.all())
+      # Set the response content type and dump the json
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(users_json))
+    else:
+      users_json = []
+      if len(self.request.params) == 2:
+        user = self.request.params['loginName']
+        password = self.request.params['password']
+        q = db.GqlQuery("SELECT * FROM User WHERE loginName = %s AND password = %s" % (user, password))
+        result = q.fetch(2)
+        if len(result) == 0:
+          users_json = []
+        else:
+          users_json = helpers.build_list_json(User.all())
+      else:
+        users_json = []
+      # Set the response content type and dump the json
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(users_json))
   
   # Create a new User
   def post(self):
@@ -104,7 +108,6 @@ class UsersHandler(webapp.RequestHandler):
 class UserHandler(webapp.RequestHandler):
   # retrieve the task with a given id
   def get(self, guid):
-    
     # find the matching task
     key = db.Key.from_path('User', int(guid))
     user = db.get(key)
@@ -155,6 +158,7 @@ class UserHandler(webapp.RequestHandler):
     user = db.get(key)
     if not user == None:
       user.delete()
+    self.response.set_status(204, "Deleted")
   
 
 
@@ -246,6 +250,7 @@ class TaskHandler(webapp.RequestHandler):
     task = db.get(key)
     if not task == None:
       task.delete()
+    self.response.set_status(204, "Deleted")
   
 
 
@@ -338,6 +343,7 @@ class ProjectHandler(webapp.RequestHandler):
     project = db.get(key)
     if not project == None:
       project.delete()
+    self.response.set_status(204, "Deleted")
   
 
 
