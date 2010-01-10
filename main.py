@@ -71,13 +71,18 @@ class UsersHandler(webapp.RequestHandler):
       users_json = []
       if len(self.request.params) == 2:
         user = self.request.params['loginName']
-        password = self.request.params['password']
-        q = db.GqlQuery("SELECT * FROM User WHERE loginName = %s AND password = %s" % (user, password))
+        password = self.request.params['password'].strip()
+        q = db.GqlQuery("SELECT * FROM User WHERE loginName = %s" % user)
         result = q.fetch(2)
         if len(result) == 0:
           users_json = []
         else:
-          users_json = helpers.build_list_json(User.all())
+          # This is really crappy but it works for now, but I'm not proud of it...
+          password = "'None'" if len(password.strip().replace("\'","")) == 0 else password
+          if "'%s'" % result[0].password == password:
+            users_json = helpers.build_list_json(User.all())
+          else:
+            users_json = []
       else:
         users_json = []
       # Set the response content type and dump the json
