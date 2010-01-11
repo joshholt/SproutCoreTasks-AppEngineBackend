@@ -35,8 +35,8 @@ class Task(db.Model):
   projectId = db.IntegerProperty()
   priority = db.StringProperty(default="_Medium")
   effort = db.StringProperty()
-  submitterId = db.IntegerProperty() # These keep changing
-  assigneeId = db.IntegerProperty()  # These keep changing
+  submitterId = db.StringProperty() # These keep changing
+  assigneeId = db.StringProperty()  # These keep changing
   type = db.StringProperty(default="_Other")
   developmentStatus = db.StringProperty(default="_Planned")
   validation = db.StringProperty(default="_Untested")
