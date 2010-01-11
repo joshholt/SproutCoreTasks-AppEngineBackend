@@ -3,7 +3,10 @@
 """ Prupose: To serve tasks & project to SG's Sproutcore Tasks application.
     Author: Joshua Holt
     Date: 09-30-2009
-    Last Modified: 11-20-2009
+    Last Modified: 01-10-2010
+    
+    ********* NOTE(2) ***********
+    I added a nasty hack that I am not proud of on line #84
     
     ********* SOLVED *************
     
