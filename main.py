@@ -167,7 +167,9 @@ class UserHandler(webapp.RequestHandler):
     user = db.get(key)
     if not user == None:
       user.delete()
-    self.response.set_status(204, "Deleted")
+      self.response.set_status(204, "Deleted")
+    else:
+      self.response.set_status(404, "Not Found")
   
 
 
@@ -259,7 +261,9 @@ class TaskHandler(webapp.RequestHandler):
     task = db.get(key)
     if not task == None:
       task.delete()
-    self.response.set_status(204, "Deleted")
+      self.response.set_status(204, "Deleted")
+    else:
+      self.response.set_status(404, "Not Found")
   
 
 
@@ -352,7 +356,9 @@ class ProjectHandler(webapp.RequestHandler):
     project = db.get(key)
     if not project == None:
       project.delete()
-    self.response.set_status(204, "Deleted")
+      self.response.set_status(204, "Deleted")
+    else:
+      self.response.set_status(404, "Not Found")
   
 
 
