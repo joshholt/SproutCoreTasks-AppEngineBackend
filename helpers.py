@@ -4,8 +4,8 @@
   Last Modified: 10-03-2009
 """
 
-import time
-import datetime
+import time,datetime,hashlib
+
 
 def apply_json_to_model_instance(model, jobj):
   """This is the generic method to apply the given json to the given model"""
