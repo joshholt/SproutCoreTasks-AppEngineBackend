@@ -80,10 +80,12 @@ class UsersHandler(webapp.RequestHandler):
         if len(result) == 0:
           users_json = []
         else:
-          # This is really crappy but it works for now, but I'm not proud of it...
+          # This is really crappy, it works for now, but I'm not proud of it...
           if len(password.strip().replace("\'","")) == 0 or password == None:
             password = "'None'"
           if "'%s'" % result[0].password == password or (len(result[0].password) == 0 and password == "'None'"):
+            result[0].authToken = helpers.generateAuthToken()
+            result[0].put()
             users_json = helpers.build_list_json(User.all())
           else:
             users_json = []

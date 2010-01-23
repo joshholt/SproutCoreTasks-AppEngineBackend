@@ -4,6 +4,9 @@
   Last Modified: 10-03-2009
 """
 
+import time
+import datetime
+
 def apply_json_to_model_instance(model, jobj):
   """This is the generic method to apply the given json to the given model"""
   for key in model.properties():
@@ -26,3 +29,7 @@ def build_list_json(list):
   
     users_json.append(user_json)
   return users_json
+
+def generateAuthToken():
+  """This method generates the authToken for a user every time they login"""
+  return hashlib.sha1("This--is--the--authToken--%s" % time.mktime(datetime.datetime.utcnow().timetuple())).hexdigest()
