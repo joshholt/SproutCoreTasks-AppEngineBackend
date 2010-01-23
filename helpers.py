@@ -22,7 +22,7 @@ def build_list_json(list):
     user_json = { "id": "%s" % user.key().id_or_name(),
       "name": user.name,
       "loginName": user.loginName, "role": user.role,
-      "preferences": {}, "email": user.email, "authToken": "", 
+      "preferences": {}, "email": user.email, "authToken": user.authToken if user.authToken != None else "", 
       "password": "password" if user.password != None and len(user.password) != 0 else "",
       "createdAt": user.createdAt if user.createdAt != None else 0, 
       "updatedAt": user.updatedAt if user.updatedAt != None else 0 }
