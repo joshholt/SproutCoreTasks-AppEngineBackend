@@ -51,6 +51,7 @@ import wsgiref.handlers
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from django.utils import simplejson
+from google.appengine.api.labs import taskqueue
 
 # Data Model Imports
 import models
@@ -222,8 +223,10 @@ class TasksHandler(webapp.RequestHandler):
     task = helpers.apply_json_to_model_instance(Task(),task_json)
     # save task
     task.put()
-        
     guid = task.key().id_or_name()
+    # Push notification email on the queue
+    taskqueue.add(url='/mailer', params={'taskId': int(guid)})
+    
     new_url = "/tasks-server/task/%s" % guid
     task_json["id"] = guid
     
@@ -267,6 +270,8 @@ class TaskHandler(webapp.RequestHandler):
       task = helpers.apply_json_to_model_instance(task, task_json)
       # save the updated data
       task.put()
+      # Push notification email on the queue
+      taskqueue.add(url='/mailer', params={'taskId': int(guid)})
       # return the same record...
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(task_json))
@@ -390,16 +395,11 @@ class ProjectHandler(webapp.RequestHandler):
     else:
       self.response.set_status(401, "Not Authorized")
 
-
-class ChatHandler(webapp.RequestHandler):
-  """docstring for ChatHandler"""
-  def get(self):
-    """docstring for get"""
-    notification.send_test_chat()
-    notification.send_test_email()
-    self.response.set_status(200, "Notification Sent")
-  
-
+class MailWorker(webapp.RequestHandler):
+  """The Mail worker works off the mail queue"""
+  def post(self):
+    notification.send_test_email(self.request.get('taskId'))
+    
 
 def main():
   application = webapp.WSGIApplication([(r'/tasks-server/user?$', UsersHandler),
@@ -408,7 +408,7 @@ def main():
     (r'/tasks-server/user/([^\.]+)?$', UserHandler),
     (r'/tasks-server/project/([^\.]+)?$', ProjectHandler),
     (r'/tasks-server/task/([^\.]+)?$', TaskHandler),
-    (r'/notification-test', ChatHandler)],debug=True)
+    (r'/mailer', MailWorker)],debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
 
