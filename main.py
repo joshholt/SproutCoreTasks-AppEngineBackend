@@ -142,24 +142,26 @@ class UserHandler(webapp.RequestHandler):
   
   # Update an existing record
   def put(self, guid):
-    
-    # find the matching user
-    key = db.Key.from_path('User', int(guid))
-    user = db.get(key)
-    if not user == None:
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+      # find the matching user
+      key = db.Key.from_path('User', int(guid))
+      user = db.get(key)
+      if not user == None:
       
-      # collect the data from the record
-      user_json = simplejson.loads(self.request.body)
-      # update the record
-      user = helpers.apply_json_to_model_instance(user, user_json)
-      # save the record
-      user.put()
-      # return the same record...
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(user_json))
+        # collect the data from the record
+        user_json = simplejson.loads(self.request.body)
+        # update the record
+        user = helpers.apply_json_to_model_instance(user, user_json)
+        # save the record
+        user.put()
+        # return the same record...
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write(simplejson.dumps(user_json))
     
+      else:
+        self.response.set_status(404, "User not found")
     else:
-      self.response.set_status(404, "User not found")
+      self.response.set_status(401, "Not Atuhorized")
   
   # delete the user with a given id
   def delete(self, guid):

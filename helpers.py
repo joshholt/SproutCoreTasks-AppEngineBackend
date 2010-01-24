@@ -49,15 +49,15 @@ def authorized(userID, authToken, role, action):
   if not user == None:
     if user.authToken == authToken and user.role = role:
       retVal = {
-      "createProject": lamda role: False if role not == "_Manager" else True,
-      "updateProject": lamda role: False if role not == "_Manager" else True,
-      "deleteProject": lamda role: False if role not == "_Manager" else True,
+      "createProject": lambda role: False if not role == "_Manager" else True,
+      "updateProject": lambda role: False if not role == "_Manager" else True,
+      "deleteProject": lambda role: False if not role == "_Manager" else True,
       "createTask": True,
       "updateTask": True,
-      "deleteTask": lamda role: False if role not == "_Manager" or role not == "_Developer" else True,
-      "createUser": lamda role: False if role not == "_Manager" else True,
-      "updateUser": lamda role: False if role not == "_Manager" else True,
-      "deleteUser": lamda role: False if role not == "_Manager" else True
+      "deleteTask": lambda role: False if not role == "_Manager" or not role == "_Developer" else True,
+      "createUser": lambda role: False if not role == "_Manager" else True,
+      "updateUser": lambda role: False if not role == "_Manager" else True,
+      "deleteUser": lambda role: False if not role == "_Manager" else True
       }[action](role)
     else:
       retVal = True
