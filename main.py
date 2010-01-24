@@ -97,25 +97,37 @@ class UsersHandler(webapp.RequestHandler):
   
   # Create a new User
   def post(self):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
-      # collect the data from the record
+    if len(self.request.params) > 0:
+      if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+        # collect the data from the record
+        user_json = simplejson.loads(self.request.body)
+    
+        # create a user
+        user = helpers.apply_json_to_model_instance(User(), user_json)
+        # save the new user
+        user.put()
+    
+        guid = user.key().id_or_name()
+        new_url = "/tasks-server/user/%s" % guid
+        user_json["id"] = guid
+    
+        self.response.set_status(201, "User created")
+        self.response.headers['Location'] = new_url
+        self.response.headers['Content-Type'] = 'text/json'
+        self.response.out.write(simplejson.dumps(user_json))
+      else:
+        self.response.set_status(401, "Not Authorized")
+    else:
       user_json = simplejson.loads(self.request.body)
-    
-      # create a user
       user = helpers.apply_json_to_model_instance(User(), user_json)
-      # save the new user
       user.put()
-    
       guid = user.key().id_or_name()
       new_url = "/tasks-server/user/%s" % guid
       user_json["id"] = guid
-    
       self.response.set_status(201, "User created")
       self.response.headers['Location'] = new_url
       self.response.headers['Content-Type'] = 'text/json'
       self.response.out.write(simplejson.dumps(user_json))
-    else:
-      self.response.set_status(401, "Not Authorized")
 
 
 class UserHandler(webapp.RequestHandler):
