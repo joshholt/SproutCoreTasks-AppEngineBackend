@@ -117,9 +117,9 @@ class UsersHandler(webapp.RequestHandler):
 
 
 class UserHandler(webapp.RequestHandler):
-  # retrieve the task with a given id
+  # retrieve the user with a given id
   def get(self, guid):
-    # find the matching task
+    # find the matching user
     key = db.Key.from_path('User', int(guid))
     user = db.get(key)
     if not user == None:
@@ -163,15 +163,17 @@ class UserHandler(webapp.RequestHandler):
   
   # delete the user with a given id
   def delete(self, guid):
-    
-    # find the matching task and delete it if found
-    key = db.Key.from_path('User', int(guid))
-    user = db.get(key)
-    if not user == None:
-      user.delete()
-      self.response.set_status(204, "Deleted")
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+      # find the matching task and delete it if found
+      key = db.Key.from_path('User', int(guid))
+      user = db.get(key)
+      if not user == None:
+        user.delete()
+        self.response.set_status(204, "Deleted")
+      else:
+        self.response.set_status(404, "Not Found")
     else:
-      self.response.set_status(404, "Not Found")
+      self.response.set_status(401, "Not Atuhorized")
   
 
 
