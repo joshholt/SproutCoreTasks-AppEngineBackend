@@ -47,7 +47,7 @@ def authorized(userID, authToken, role, action):
   user = db.get(key)
   retVal = False
   if not user == None:
-    if user.authToken == authToken and user.role = role:
+    if user.authToken == authToken and user.role == role:
       retVal = {
       "createProject": lambda role: False if not role == "_Manager" else True,
       "updateProject": lambda role: False if not role == "_Manager" else True,
