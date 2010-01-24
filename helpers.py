@@ -56,9 +56,9 @@ def authorized(userID, authToken, role, action):
       "updateTask": True,
       "deleteTask": lambda role: False if not role == "_Manager" or not role == "_Developer" else True,
       "createUser": lambda role: False if not role == "_Manager" else True,
-      "updateUser": lambda role: False if not role == "_Manager" else True,
+      "updateUser": True,
       "deleteUser": lambda role: False if not role == "_Manager" else True
-      }[action](role)
+      }[action](str(role))
     else:
       retVal = True
   else:

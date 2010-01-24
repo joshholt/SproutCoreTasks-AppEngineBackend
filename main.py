@@ -97,23 +97,25 @@ class UsersHandler(webapp.RequestHandler):
   
   # Create a new User
   def post(self):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+      # collect the data from the record
+      user_json = simplejson.loads(self.request.body)
     
-    # collect the data from the record
-    user_json = simplejson.loads(self.request.body)
+      # create a user
+      user = helpers.apply_json_to_model_instance(User(), user_json)
+      # save the new user
+      user.put()
     
-    # create a user
-    user = helpers.apply_json_to_model_instance(User(), user_json)
-    # save the new user
-    user.put()
+      guid = user.key().id_or_name()
+      new_url = "/tasks-server/user/%s" % guid
+      user_json["id"] = guid
     
-    guid = user.key().id_or_name()
-    new_url = "/tasks-server/user/%s" % guid
-    user_json["id"] = guid
-    
-    self.response.set_status(201, "User created")
-    self.response.headers['Location'] = new_url
-    self.response.headers['Content-Type'] = 'text/json'
-    self.response.out.write(simplejson.dumps(user_json))
+      self.response.set_status(201, "User created")
+      self.response.headers['Location'] = new_url
+      self.response.headers['Content-Type'] = 'text/json'
+      self.response.out.write(simplejson.dumps(user_json))
+    else:
+      self.response.set_status(401, "Not Authorized")
 
 
 class UserHandler(webapp.RequestHandler):
@@ -142,27 +144,25 @@ class UserHandler(webapp.RequestHandler):
   
   # Update an existing record
   def put(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
-      # find the matching user
-      key = db.Key.from_path('User', int(guid))
-      user = db.get(key)
-      if not user == None:
-      
-        # collect the data from the record
-        user_json = simplejson.loads(self.request.body)
-        # update the record
-        user = helpers.apply_json_to_model_instance(user, user_json)
-        # save the record
-        user.put()
-        # return the same record...
-        self.response.headers['Content-Type'] = 'application/json'
-        self.response.out.write(simplejson.dumps(user_json))
+    # find the matching user
+    key = db.Key.from_path('User', int(guid))
+    user = db.get(key)
+    if not user == None:
     
-      else:
-        self.response.set_status(404, "User not found")
+      # collect the data from the record
+      user_json = simplejson.loads(self.request.body)
+      if str(user.role) == "_Guest":
+        user_json['role'] = "_Guest"
+      # update the record
+      user = helpers.apply_json_to_model_instance(user, user_json)
+      # save the record
+      user.put()
+      # return the same record...
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(user_json))
     else:
-      self.response.set_status(401, "Not Atuhorized")
-  
+      self.response.set_status(404, "User not found")
+
   # delete the user with a given id
   def delete(self, guid):
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
@@ -262,14 +262,17 @@ class TaskHandler(webapp.RequestHandler):
   
   def delete(self, guid):
     """Delete the task with the given id"""
-    # search for the Project and delete if found
-    key = db.Key.from_path('Task', int(guid))
-    task = db.get(key)
-    if not task == None:
-      task.delete()
-      self.response.set_status(204, "Deleted")
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+      # search for the Project and delete if found
+      key = db.Key.from_path('Task', int(guid))
+      task = db.get(key)
+      if not task == None:
+        task.delete()
+        self.response.set_status(204, "Deleted")
+      else:
+        self.response.set_status(404, "Not Found")
     else:
-      self.response.set_status(404, "Not Found")
+      self.response.set_status(401, "Not Authorized")
   
 
 
@@ -294,22 +297,25 @@ class ProjectsHandler(webapp.RequestHandler):
   
   # Create a new User
   def post(self):
-    # collect the data from the record
-    project_json = simplejson.loads(self.request.body)
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+      # collect the data from the record
+      project_json = simplejson.loads(self.request.body)
     
-    # create a new project
-    project = helpers.apply_json_to_model_instance(Project(), project_json)
-    # save project
-    project.save()
+      # create a new project
+      project = helpers.apply_json_to_model_instance(Project(), project_json)
+      # save project
+      project.save()
     
-    guid = project.key().id_or_name()
-    new_url = "/tasks-server/project/%s" % guid
-    project_json["id"] = guid
+      guid = project.key().id_or_name()
+      new_url = "/tasks-server/project/%s" % guid
+      project_json["id"] = guid
     
-    self.response.set_status(201, "Project created")
-    self.response.headers['Location'] = new_url
-    self.response.headers['Content-Type'] = 'text/json'
-    self.response.out.write(simplejson.dumps(project_json))
+      self.response.set_status(201, "Project created")
+      self.response.headers['Location'] = new_url
+      self.response.headers['Content-Type'] = 'text/json'
+      self.response.out.write(simplejson.dumps(project_json))
+    else:
+      self.response.set_status(401, "Not Authorized")
   
 
 
@@ -337,35 +343,39 @@ class ProjectHandler(webapp.RequestHandler):
   
   def put(self, guid):
     """Update the project with the given id"""
-    key = db.Key.from_path('Project', int(guid))
-    project = db.get(key)
-    if not project == None:
-      # collect the json from the request
-      project_json = simplejson.loads(self.request.body)
-      # update the project record
-      project = helpers.apply_json_to_model_instance(project, project_json)
-      # save the updated data
-      project.put()
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+      key = db.Key.from_path('Project', int(guid))
+      project = db.get(key)
+      if not project == None:
+        # collect the json from the request
+        project_json = simplejson.loads(self.request.body)
+        # update the project record
+        project = helpers.apply_json_to_model_instance(project, project_json)
+        # save the updated data
+        project.put()
       
-      # return the same record...
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(project_json))
+        # return the same record...
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write(simplejson.dumps(project_json))
       
+      else:
+        self.response.set_status(404, "Project not found")
     else:
-      self.response.set_status(404, "Project not found")
+      self.response.set_status(401, "Not Authorized")
   
   def delete(self, guid):
     """Delete the project with the given id"""
-    
-    # search for the Project and delete if found
-    key = db.Key.from_path('Project', int(guid))
-    project = db.get(key)
-    if not project == None:
-      project.delete()
-      self.response.set_status(204, "Deleted")
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+      # search for the Project and delete if found
+      key = db.Key.from_path('Project', int(guid))
+      project = db.get(key)
+      if not project == None:
+        project.delete()
+        self.response.set_status(204, "Deleted")
+      else:
+        self.response.set_status(404, "Not Found")
     else:
-      self.response.set_status(404, "Not Found")
-  
+      self.response.set_status(401, "Not Authorized")
 
 
 class ChatHandler(webapp.RequestHandler):
