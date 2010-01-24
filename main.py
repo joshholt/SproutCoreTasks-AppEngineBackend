@@ -120,6 +120,7 @@ class UsersHandler(webapp.RequestHandler):
     else:
       user_json = simplejson.loads(self.request.body)
       user = helpers.apply_json_to_model_instance(User(), user_json)
+      user.authToken = helpers.generateAuthToken()
       user.put()
       guid = user.key().id_or_name()
       new_url = "/tasks-server/user/%s" % guid
