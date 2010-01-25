@@ -56,7 +56,7 @@ def send_test_email(arg):
       project = db.get(project_key)
     if not submitter == None and not assignee == None:
       project_name = project.name if not task.projectId == None else "Unallocated"
-      message = mail.EmailMessage(sender="Tasks <tasks@eloqua.com>", subject="Tasks Notification")
+      message = mail.EmailMessage(sender="Tasks <tasks@eloqua.com>", subject="Notification for Task #%s" % task.id)
       if not assignee.email == None:
         message.to = "%s" % assignee.email
       else:
@@ -69,15 +69,20 @@ def send_test_email(arg):
       Here is the information for the following Task:
       ------------------------------------------------------------------------
       Name:        %s
-      Description: %s
+      
+      Description:
+      %s
+      
+      Effort:      %s
       Project:     %s
       ........................................................................
-      Status:      %s
       Type:        %s
       Priority:    %s
+      Status:      %s
+      Validation:  %s
       ........................................................................
-      Assignee:    %s
-      Submitter:   %s
+      Assignee:    %s (%s)
+      Submitter:   %s (%s)
       ------------------------------------------------------------------------
       
       This task was created on:       %s
@@ -87,12 +92,14 @@ def send_test_email(arg):
       The Tasks Team
       """ % (task.name,
              task.description if not task.description == None else "......",
+             task.effort.replace('_','') if not task.effort == None else "......", 
              project_name,
-             task.developmentStatus.replace('_','') if not task.developmentStatus == None else ".....", 
              task.type.replace('_','') if not task.type == None else "......", 
              task.priority.replace('_','') if not task.priority == None else "......", 
-             assignee.name, 
-             submitter.name, 
+             task.developmentStatus.replace('_','') if not task.developmentStatus == None else ".....", 
+             task.validation.replace('_','') if not task.validation == None else ".....", 
+             assignee.name, assignee.loginName,
+             submitter.name, submitter.loginName,
              datetime.datetime.fromtimestamp(task.createdAt/1000),
              datetime.datetime.fromtimestamp(task.updatedAt/1000))
       message.send()
