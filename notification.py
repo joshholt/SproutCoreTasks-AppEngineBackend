@@ -56,7 +56,7 @@ def send_test_email(arg):
       project = db.get(project_key)
     if not submitter == None and not assignee == None:
       project_name = project.name if not task.projectId == None else "Unallocated"
-      message = mail.EmailMessage(sender="Tasks <tasks@eloqua.com>", subject="Notification for Task #%s" % task.id)
+      message = mail.EmailMessage(sender="Tasks <tasks@eloqua.com>", subject="Notification for Task #%s" % task.key().id_or_name())
       if not assignee.email == None:
         message.to = "%s" % assignee.email
       else:
