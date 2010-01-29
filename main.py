@@ -99,7 +99,7 @@ class UsersHandler(webapp.RequestHandler):
   # Create a new User
   def post(self):
     if len(self.request.params) > 0:
-      if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+      if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
         # collect the data from the record
         user_json = simplejson.loads(self.request.body)
     
@@ -179,7 +179,7 @@ class UserHandler(webapp.RequestHandler):
 
   # delete the user with a given id
   def delete(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
       # find the matching task and delete it if found
       key = db.Key.from_path('User', int(guid))
       user = db.get(key)
@@ -280,7 +280,7 @@ class TaskHandler(webapp.RequestHandler):
   
   def delete(self, guid):
     """Delete the task with the given id"""
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
       # search for the Project and delete if found
       key = db.Key.from_path('Task', int(guid))
       task = db.get(key)
@@ -315,7 +315,7 @@ class ProjectsHandler(webapp.RequestHandler):
   
   # Create a new User
   def post(self):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
       # collect the data from the record
       project_json = simplejson.loads(self.request.body)
     
@@ -361,7 +361,7 @@ class ProjectHandler(webapp.RequestHandler):
   
   def put(self, guid):
     """Update the project with the given id"""
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
       key = db.Key.from_path('Project', int(guid))
       project = db.get(key)
       if not project == None:
@@ -383,7 +383,7 @@ class ProjectHandler(webapp.RequestHandler):
   
   def delete(self, guid):
     """Delete the project with the given id"""
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['role'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
       # search for the Project and delete if found
       key = db.Key.from_path('Project', int(guid))
       project = db.get(key)

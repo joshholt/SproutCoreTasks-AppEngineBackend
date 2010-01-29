@@ -41,24 +41,24 @@ def generateAuthToken():
 #-----------------------------------------------------------------------------
 # AUTHORIZATION
 #-----------------------------------------------------------------------------
-def authorized(userID, authToken, role, action):
-  """This method checks the user's authToken and role aginst what's stored in the DB"""
+def authorized(userID, authToken, action):
+  """This method checks the user's authToken against what's stored in the DB"""
   key = db.Key.from_path('User', int(userID))
   user = db.get(key)
   retVal = False
   if not user == None:
-    if user.authToken == authToken and user.role == role:
+    if user.authToken == authToken:
       retVal = {
       "createProject": lambda role: True if role == "_Manager" else False,
       "updateProject": lambda role: True if role == "_Manager" else False,
       "deleteProject": lambda role: True if role == "_Manager" else False,
       "createTask": True,
       "updateTask": True,
-      "deleteTask": lambda role: True if  role == "_Manager" or role == "_Developer" else False,
+      "deleteTask": lambda role: True if  not role == "_Guest" else False,
       "createUser": lambda role: True if  role == "_Manager" else False,
       "updateUser": True,
       "deleteUser": lambda role: True if  role == "_Manager" else False
-      }[action](str(role))
+      }[action](str(user.role))
     else:
       retVal = False
   else:
