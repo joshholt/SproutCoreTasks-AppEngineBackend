@@ -56,50 +56,45 @@ def send_test_email(arg):
       project = db.get(project_key)
     if not submitter == None and not assignee == None:
       project_name = project.name if not task.projectId == None else "Unallocated"
-      message = mail.EmailMessage(sender="Tasks <tasks@eloqua.com>", subject="Notification for Task #%s" % task.key().id_or_name())
-      if not assignee.email == None:
-        message.to = "%s" % assignee.email
-      else:
-        message.to = "holt.josh@gmail.com"
-      if not submitter.email == None:
-        message.cc = "%s" % submitter.email
-      else:
-        message.cc = "holt.josh@gmail.com"
-      message.body = """
-      Here is the information for the following Task:
-      ------------------------------------------------------------------------
-      Name:        %s
-      
-      Description:
-      %s
-      
-      Effort:      %s
-      Project:     %s
-      ........................................................................
-      Type:        %s
-      Priority:    %s
-      Status:      %s
-      Validation:  %s
-      ........................................................................
-      Assignee:    %s (%s)
-      Submitter:   %s (%s)
-      ------------------------------------------------------------------------
-      
-      This task was created on:       %s
-      This task was last updated on:  %s
-      
-      
-      The Tasks Team
-      """ % (task.name,
-             task.description if not task.description == None else "......",
-             task.effort.replace('_','') if not task.effort == None else "......", 
-             project_name,
-             task.type.replace('_','') if not task.type == None else "......", 
-             task.priority.replace('_','') if not task.priority == None else "......", 
-             task.developmentStatus.replace('_','') if not task.developmentStatus == None else ".....", 
-             task.validation.replace('_','') if not task.validation == None else ".....", 
-             assignee.name, assignee.loginName,
-             submitter.name, submitter.loginName,
-             datetime.datetime.fromtimestamp(task.createdAt/1000),
-             datetime.datetime.fromtimestamp(task.updatedAt/1000))
-      message.send()
+      message = mail.EmailMessage(sender="Tasks <suvajit.gupta@eloqua.com>", subject="Notification for Task #%s" % task.key().id_or_name())
+      # if not assignee.email == None:
+      #   message.to = "%s" % assignee.email
+      # else:
+      #   message.to = "holt.josh@gmail.com"
+      # if not submitter.email == None:
+      #   message.cc = "%s" % submitter.email
+      # else:
+      #   message.cc = "holt.josh@gmail.com"
+      message.to = "suvajit.gupta@eloqua.com"
+      message.body = """Name:\t\t%s
+
+Type:\t\t%s
+Priority:\t\t%s
+Status:\t\t%s
+Validation:\t%s
+
+Submitter:\t%s (%s)
+Assignee:\t%s (%s)
+
+Effort:\t\t%s
+Project:\t\t%s
+
+Created:\t\t%s
+Updated:\t%s
+
+Description:
+
+%s
+""" % (task.name,
+       task.type.replace('_','') if not task.type == None else "-----", 
+       task.priority.replace('_','') if not task.priority == None else "-----", 
+       task.developmentStatus.replace('_','') if not task.developmentStatus == None else "-----", 
+       task.validation.replace('_','') if not task.validation == None else "-----", 
+       submitter.name, submitter.loginName,
+       assignee.name, assignee.loginName,
+       task.effort.replace('_','') if not task.effort == None else "-----", 
+       project_name,
+       datetime.datetime.fromtimestamp(task.createdAt/1000),
+       datetime.datetime.fromtimestamp(task.updatedAt/1000),
+       task.description if not task.description == None else "")
+  message.send()
