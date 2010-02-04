@@ -40,8 +40,15 @@ def send_test_chat():
   else:
     return "Sent Message"
 
+def should_notify(task,action):
+  """Determines if a notification should be sent"""
+  retVal = {
+  "createTask": lambda task: True if task.priority != None and task.developmentStatus != None and task.type != None else False,
+  "updateTask": lambda task: True if task.validation != None and task.validation == "_Risky" else False
+  }[action](task)
+  return retVal
 
-def send_test_email(arg):
+def send_notification(arg):
   """sends a test email"""
   # Get information about this task and the assignee and submitter
   task_key = db.Key.from_path('Task', int(arg))
@@ -65,7 +72,7 @@ def send_test_email(arg):
       #   message.cc = "%s" % submitter.email
       # else:
       #   message.cc = "holt.josh@gmail.com"
-      message.to = "suvajit.gupta@eloqua.com"
+      message.to = "josh.holt@eloqua.com"
       message.body = """Name:\t\t%s
 
 Type:\t\t%s
@@ -94,7 +101,7 @@ Description:
        assignee.name, assignee.loginName,
        task.effort.replace('_','') if not task.effort == None else "-----", 
        project_name,
-       datetime.datetime.fromtimestamp(task.createdAt/1000),
-       datetime.datetime.fromtimestamp(task.updatedAt/1000),
+       datetime.datetime.fromtimestamp(task.createdAt//1000),
+       datetime.datetime.fromtimestamp(task.updatedAt//1000),
        task.description if not task.description == None else "")
   message.send()
