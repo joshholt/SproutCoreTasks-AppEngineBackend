@@ -224,8 +224,9 @@ class TasksHandler(webapp.RequestHandler):
     # save task
     task.put()
     guid = task.key().id_or_name()
-    # Push notification email on the queue
-    taskqueue.add(url='/mailer', params={'taskId': int(guid)})
+    # Push notification email on the queue if the task has some sort of status, etc...
+    if notification.should_notify(task,"createTask"):
+      taskqueue.add(url='/mailer', params={'taskId': int(guid)})
     
     new_url = "/tasks-server/task/%s" % guid
     task_json["id"] = guid
@@ -270,8 +271,9 @@ class TaskHandler(webapp.RequestHandler):
       task = helpers.apply_json_to_model_instance(task, task_json)
       # save the updated data
       task.put()
-      # Push notification email on the queue
-      taskqueue.add(url='/mailer', params={'taskId': int(guid)})
+      # Push notification email on the queue if we need to notify
+      if notification.should_notify(task,"createTask"):
+        taskqueue.add(url='/mailer', params={'taskId': int(guid)})
       # return the same record...
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(task_json))
@@ -398,7 +400,7 @@ class ProjectHandler(webapp.RequestHandler):
 class MailWorker(webapp.RequestHandler):
   """The Mail worker works off the mail queue"""
   def post(self):
-    notification.send_test_email(self.request.get('taskId'))
+    notification.send_notification(self.request.get('taskId'))
     
 
 def main():
