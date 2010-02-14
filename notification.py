@@ -43,8 +43,9 @@ def send_test_chat():
 def should_notify(task,action):
   """Determines if a notification should be sent"""
   retVal = {
-  "createTask": lambda task: True if task.priority != None and task.developmentStatus != None and task.type != None else False,
-  "updateTask": lambda task: True if task.validation != None and task.validation == "_Risky" else False
+  # If task
+  "createTask": lambda task: True if task.priority != None and task.developmentStatus != None and task.type != None and task.name != "_NewTask" else False,
+  "updateTask": lambda task: True 
   }[action](task)
   return retVal
 
@@ -86,9 +87,6 @@ Assignee:\t%s (%s)
 Effort:\t\t%s
 Project:\t\t%s
 
-Created:\t\t%s
-Updated:\t%s
-
 Description:
 
 %s
@@ -101,7 +99,5 @@ Description:
        assignee.name, assignee.loginName,
        task.effort.replace('_','') if not task.effort == None else "-----", 
        project_name,
-       datetime.datetime.fromtimestamp(task.createdAt//1000),
-       datetime.datetime.fromtimestamp(task.updatedAt//1000),
        task.description if not task.description == None else "")
   message.send()

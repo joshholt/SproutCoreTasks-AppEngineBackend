@@ -57,6 +57,7 @@ def authorized(userID, authToken, action):
       "deleteTask": lambda role: True if  not role == "_Guest" else False,
       "createUser": lambda role: True if  role == "_Manager" else False,
       "updateUser": True,
+      "updateUserRole": lambda role: True if role === "_Manager" else False,
       "deleteUser": lambda role: True if  role == "_Manager" else False
       }[action](str(user.role))
     else:
