@@ -218,33 +218,30 @@ class TasksHandler(webapp.RequestHandler):
   
   # Create a new Task
   def post(self):
-    wantsNotifications = {“true”: True, “false”: False}.get(self.request.params['notify'].lower())
+    wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
     # collect the data from the record
     task_json = simplejson.loads(self.request.body)
     # if the user is a guest the project must be unallocated
     currentUserID = self.request.params['UUID']
     cukey = db.Key.from_path('User', int(currentUserID))
     user = db.get(cukey)
-    if str(user.role) == '_Guest' and task_json['projectId'] == None or str(user.role) != '_Guest'
+    if str(user.role) == '_Guest' and task_json['projectId'] == None or str(user.role) != '_Guest':
       # create a new taks with the passed in json
       task = helpers.apply_json_to_model_instance(Task(),task_json)
       # save task
       task.put()
       guid = task.key().id_or_name()
-      # Push notification email on the queue if the task has some sort of status, etc...
+      # Push notification email on the queue if the task has some sort of status, etc..
       if notification.should_notify(currentUserID,task,"createTask", wantsNotifications ):
         taskqueue.add(url='/mailer', params={'taskId': int(guid)})
-    
       new_url = "/tasks-server/task/%s" % guid
       task_json["id"] = guid
-    
       self.response.set_status(201, "Task created")
       self.response.headers['Location'] = new_url
       self.response.headers['Content-Type'] = 'text/json'
       self.response.out.write(simplejson.dumps(task_json))
     else:
       self.response.set_status(401, "Not Authorized")
-  
 
 
 class TaskHandler(webapp.RequestHandler):
@@ -277,11 +274,11 @@ class TaskHandler(webapp.RequestHandler):
       # collect the json from the request
       task_json = simplejson.loads(self.request.body)
       # if the user is a guest the project must be unallocated
-      wantsNotifications = {“true”: True, “false”: False}.get(self.request.params['notify'].lower())
+      wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
       currentUserID = self.request.params['UUID']
       cukey = db.Key.from_path('User', int(currentUserID))
       user = db.get(cukey)
-      if str(user.role) == '_Guest' and task_json['projectId'] == None or str(user.role) != '_Guest'
+      if str(user.role) == '_Guest' and task_json['projectId'] == None or str(user.role) != '_Guest':
         # update the project record
         task = helpers.apply_json_to_model_instance(task, task_json)
         # save the updated data
@@ -303,8 +300,15 @@ class TaskHandler(webapp.RequestHandler):
       # search for the Project and delete if found
       key = db.Key.from_path('Task', int(guid))
       task = db.get(key)
+      wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
+      currentUserID = self.request.params['UUID']
+      cukey = db.Key.from_path('User', int(currentUserID))
+      user = db.get(cukey)
       if not task == None:
         task.delete()
+        # Push notification email on the queue if we need to notify
+        if notification.should_notify(currentUserID,task,"createTask",wantsNotifications):
+          taskqueue.add(url='/mailer', params={'taskId': int(guid)})
         self.response.set_status(204, "Deleted")
       else:
         self.response.set_status(404, "Not Found")

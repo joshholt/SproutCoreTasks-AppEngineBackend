@@ -20,8 +20,7 @@ def should_notify(currentUserID, task, action, wantsNotifications = True):
   submitter = db.get(submitterKey)
   assigneeKey = db.Key.from_path('User', int(task.assigneeId))
   assignee = db.get(assigneeKey)
-  
-  if currentUserID == task.submitterId or currentUserId == task.assigneeId or wantsNotifications == False:
+  if currentUserID == task.submitterId or currentUserID == task.assigneeId or wantsNotifications == False:
     retVal = False
   else:
     retVal = {
@@ -88,7 +87,7 @@ def send_notification(arg):
     message.to = message.cc
     message.cc = None
     message.send()
-  else if message.to == None and message.cc == None:
+  elif message.to == None and message.cc == None:
     pass
   else:
     message.send()
