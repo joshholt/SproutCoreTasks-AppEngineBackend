@@ -1,15 +1,15 @@
-""" This module provdes helpers for dealing with the json and model objects.
+""" This module provdes helpers.
   Author: Joshua Holt 
   Date: 09-30-2009
-  Last Modified: 10-03-2009
+  Last Modified: 02-14-2010
 """
 
 import time,datetime,hashlib,models
 from google.appengine.ext import db
-from models import User
+from models import User, Task, Project
 
 #-----------------------------------------------------------------------------
-# GENERAL HELPERS
+# GENERAL JSON HELPERS
 #-----------------------------------------------------------------------------
 def apply_json_to_model_instance(model, jobj):
   """This is the generic method to apply the given json to the given model"""
@@ -57,7 +57,6 @@ def authorized(userID, authToken, action):
       "deleteTask": lambda role: True if  not role == "_Guest" else False,
       "createUser": lambda role: True if  role == "_Manager" else False,
       "updateUser": True,
-      "updateUserRole": lambda role: True if role === "_Manager" else False,
       "deleteUser": lambda role: True if  role == "_Manager" else False
       }[action](str(user.role))
     else:

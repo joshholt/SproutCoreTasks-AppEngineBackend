@@ -3,7 +3,7 @@
 """ Prupose: To serve tasks & project to SG's Sproutcore Tasks application.
     Author: Joshua Holt
     Date: 09-30-2009
-    Last Modified: 01-10-2010
+    Last Modified: 02-14-2010
     
     ********* NOTE(2) ***********
     I added a nasty hack that I am not proud of on line #84
@@ -165,8 +165,10 @@ class UserHandler(webapp.RequestHandler):
     
       # collect the data from the record
       user_json = simplejson.loads(self.request.body)
-      if str(user.role) == "_Guest":
-        user_json['role'] = "_Guest"
+      # The following keeps Guests and Developers and Testers from being able
+      # to change their role.
+      if str(user.role) != user_json['role'] and str(user.role) != "_Manager":
+        user_json['role'] = user.role
       # update the record
       user = helpers.apply_json_to_model_instance(user, user_json)
       # save the record
@@ -216,25 +218,32 @@ class TasksHandler(webapp.RequestHandler):
   
   # Create a new Task
   def post(self):
-    
+    wantsNotifications = {“true”: True, “false”: False}.get(self.request.params['notify'].lower())
     # collect the data from the record
     task_json = simplejson.loads(self.request.body)
-    # create a new taks with the passed in json
-    task = helpers.apply_json_to_model_instance(Task(),task_json)
-    # save task
-    task.put()
-    guid = task.key().id_or_name()
-    # Push notification email on the queue if the task has some sort of status, etc...
-    if notification.should_notify(task,"createTask"):
-      taskqueue.add(url='/mailer', params={'taskId': int(guid)})
+    # if the user is a guest the project must be unallocated
+    currentUserID = self.request.params['UUID']
+    cukey = db.Key.from_path('User', int(currentUserID))
+    user = db.get(cukey)
+    if str(user.role) == '_Guest' and task_json['projectId'] == None or str(user.role) != '_Guest'
+      # create a new taks with the passed in json
+      task = helpers.apply_json_to_model_instance(Task(),task_json)
+      # save task
+      task.put()
+      guid = task.key().id_or_name()
+      # Push notification email on the queue if the task has some sort of status, etc...
+      if notification.should_notify(currentUserID,task,"createTask", wantsNotifications ):
+        taskqueue.add(url='/mailer', params={'taskId': int(guid)})
     
-    new_url = "/tasks-server/task/%s" % guid
-    task_json["id"] = guid
+      new_url = "/tasks-server/task/%s" % guid
+      task_json["id"] = guid
     
-    self.response.set_status(201, "Task created")
-    self.response.headers['Location'] = new_url
-    self.response.headers['Content-Type'] = 'text/json'
-    self.response.out.write(simplejson.dumps(task_json))
+      self.response.set_status(201, "Task created")
+      self.response.headers['Location'] = new_url
+      self.response.headers['Content-Type'] = 'text/json'
+      self.response.out.write(simplejson.dumps(task_json))
+    else:
+      self.response.set_status(401, "Not Authorized")
   
 
 
@@ -264,19 +273,27 @@ class TaskHandler(webapp.RequestHandler):
     """Update the task with the given id"""
     key = db.Key.from_path('Task', int(guid))
     task = db.get(key)
-    if not task == None:
+    if task != None:
       # collect the json from the request
       task_json = simplejson.loads(self.request.body)
-      # update the project record
-      task = helpers.apply_json_to_model_instance(task, task_json)
-      # save the updated data
-      task.put()
-      # Push notification email on the queue if we need to notify
-      if notification.should_notify(task,"createTask"):
-        taskqueue.add(url='/mailer', params={'taskId': int(guid)})
-      # return the same record...
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(task_json))
+      # if the user is a guest the project must be unallocated
+      wantsNotifications = {“true”: True, “false”: False}.get(self.request.params['notify'].lower())
+      currentUserID = self.request.params['UUID']
+      cukey = db.Key.from_path('User', int(currentUserID))
+      user = db.get(cukey)
+      if str(user.role) == '_Guest' and task_json['projectId'] == None or str(user.role) != '_Guest'
+        # update the project record
+        task = helpers.apply_json_to_model_instance(task, task_json)
+        # save the updated data
+        task.put()
+        # Push notification email on the queue if we need to notify
+        if notification.should_notify(currentUserID,task,"createTask",wantsNotifications):
+          taskqueue.add(url='/mailer', params={'taskId': int(guid)})
+        # return the same record...
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write(simplejson.dumps(task_json))
+      else:
+        self.response.set_status(401, "Not Authorized")
     else:
       self.response.set_status(404, "Task not found")
   
