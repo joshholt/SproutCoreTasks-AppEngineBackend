@@ -225,7 +225,7 @@ class TasksHandler(webapp.RequestHandler):
     currentUserID = self.request.params['UUID']
     cukey = db.Key.from_path('User', int(currentUserID))
     user = db.get(cukey)
-    if str(user.role) == '_Guest' and task_json['projectId'] == None or str(user.role) != '_Guest':
+    if str(user.role) != '_Guest' or task_json.has_key('projectId') == False:
       # create a new taks with the passed in json
       task = helpers.apply_json_to_model_instance(Task(),task_json)
       # save task
@@ -278,7 +278,7 @@ class TaskHandler(webapp.RequestHandler):
       currentUserID = self.request.params['UUID']
       cukey = db.Key.from_path('User', int(currentUserID))
       user = db.get(cukey)
-      if str(user.role) == '_Guest' and task_json['projectId'] == None or str(user.role) != '_Guest':
+      if str(user.role) != '_Guest' or task_json.has_key('projectId') == False:
         # update the project record
         task = helpers.apply_json_to_model_instance(task, task_json)
         # save the updated data
