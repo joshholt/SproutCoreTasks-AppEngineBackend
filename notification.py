@@ -58,6 +58,7 @@ def send_notification(taskID, currentUserID, action):
     if submitter != None or assignee != None:
       project_name = project.name if task.projectId != None else "Unallocated"
       message = mail.EmailMessage(sender="Tasks <suvajit.gupta@eloqua.com>", subject="Task #%s %s by %s (%s)" % (task.key().id_or_name(), action, currentUser.name, currentUser.loginName ))
+      message.to = ';'; message.cc = ';';
       if assignee != None and assignee.email != None and assignee.key().id_or_name() != currentUserID:
         message.to = "%s" % assignee.email
       if submitter != None and submitter.email != None and submitter.key().id_or_name() != currentUserID:
@@ -89,7 +90,7 @@ Description:
        project_name,
        task.description if not task.description == None else "Unspecified")
        
-  if message.to == None and message.cc == None:
+  if message.to == ';' and message.cc == ';':
     pass
   else:
     message.send()
