@@ -29,7 +29,7 @@ def should_notify(currentUserID, task, action, wantsNotifications = True):
   else:
     retVal = {
     # If task
-    "createTask": lambda task: True if task.name != "_NewTask" else False,
+    "createTask": lambda task: True if task.name != "New Task" else False,
     "updateTask": lambda task: True,
     "deleteTask": lambda task: True 
     }[action](task)
@@ -60,45 +60,36 @@ def send_notification(taskID, currentUserID, action):
       message = mail.EmailMessage(sender="Tasks <suvajit.gupta@eloqua.com>", subject="Task #%s %s by %s (%s)" % (task.key().id_or_name(), action, currentUser.name, currentUser.loginName ))
       if assignee != None and assignee.email != None and assignee.key().id_or_name() != currentUserID:
         message.to = "%s" % assignee.email
-      else:
-        message.to = ''
       if submitter != None and submitter.email != None and submitter.key().id_or_name() != currentUserID:
         message.cc = "%s" % submitter.email
-      else:
-        message.cc = ''
         
-      message.body = """Name:\t\t%s
+      message.body = """Name:\t\t'%s'
 
-Type:\t\t%s
-Priority:\t\t%s
-Status:\t\t%s
-Validation:\t%s
+Type:\t\t'%s'
+Priority:\t\t'%s'
+Status:\t\t'%s'
+Validation:\t'%s'
       
-Submitter:\t%s (%s)
-Assignee:\t%s (%s)
+Submitter:\t'%s %s'
+Assignee:\t'%s %s'
       
-Effort:\t\t%s
-Project:\t\t%s
+Effort:\t\t'%s'
+Project:\t\t'%s'
       
 Description:
-      
-%s
+'%s'
       """ % (task.name,
-       task.type.replace('_','') if not task.type == None else "-----", 
-       task.priority.replace('_','') if not task.priority == None else "-----", 
-       task.developmentStatus.replace('_','') if not task.developmentStatus == None else "-----", 
-       task.validation.replace('_','') if not task.validation == None else "-----", 
-       submitter.name, submitter.loginName,
-       assignee.name, assignee.loginName,
-       task.effort.replace('_','') if not task.effort == None else "-----", 
+       task.type.replace('_','') if not task.type == None else "Unspecified", 
+       task.priority.replace('_','') if not task.priority == None else "Unspecified", 
+       task.developmentStatus.replace('_','') if not task.developmentStatus == None else "Unspecified", 
+       task.validation.replace('_','') if not task.validation == None else "Unspecified", 
+       submitter.name if not submitter == None else "Unassigned", "(" + submitter.loginName + ")" if not submitter == None else "",
+       assignee.name if not assignee == None else "Unassigned", "(" + assignee.loginName + ")" if not assignee == None else "",
+       task.effort if not task.effort == None else "Unspecified", 
        project_name,
-       task.description if not task.description == None else "")
+       task.description if not task.description == None else "Unspecified")
        
-  if message.to == '' and message.cc != '':
-    message.to = message.cc
-    message.cc = ''
-    message.send()
-  elif message.to == '' and message.cc == '':
+  if message.to == None and message.cc == None:
     pass
   else:
     message.send()
