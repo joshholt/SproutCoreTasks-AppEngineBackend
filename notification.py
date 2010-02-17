@@ -24,7 +24,7 @@ def should_notify(currentUserID, task, action, wantsNotifications = True):
     assignee = db.get(assigneeKey)
   if wantsNotifications == False:
     retVal = False
-  elif int(currentUserID) == int(task.submitterId) and int(currentUserID) == int(task.assigneeId):
+  elif task.submitterId != None and int(currentUserID) == int(task.submitterId) and task.assigneeId != None and int(currentUserID) == int(task.assigneeId):
     retVal = False
   else:
     retVal = {
