@@ -225,7 +225,7 @@ class TasksHandler(webapp.RequestHandler):
     currentUserID = self.request.params['UUID']
     cukey = db.Key.from_path('User', int(currentUserID))
     user = db.get(cukey)
-    if str(user.role) != '_Guest' or task_json.has_key('projectId') == False:
+    if str(user.role) != '_Guest' or (task_json.has_key('projectId') == False or task_json['projectId'] == None):
       # create a new taks with the passed in json
       task = helpers.apply_json_to_model_instance(Task(),task_json)
       # save task
@@ -233,7 +233,7 @@ class TasksHandler(webapp.RequestHandler):
       guid = task.key().id_or_name()
       # Push notification email on the queue if the task has some sort of status, etc..
       if notification.should_notify(currentUserID,task,"createTask", wantsNotifications ):
-        taskqueue.add(url='/mailer', params={'taskId': int(guid)})
+        taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "createTask"})
       new_url = "/tasks-server/task/%s" % guid
       task_json["id"] = guid
       self.response.set_status(201, "Task created")
@@ -278,14 +278,14 @@ class TaskHandler(webapp.RequestHandler):
       currentUserID = self.request.params['UUID']
       cukey = db.Key.from_path('User', int(currentUserID))
       user = db.get(cukey)
-      if str(user.role) != '_Guest' or task_json.has_key('projectId') == False:
+      if str(user.role) != '_Guest' or (task_json.has_key('projectId') == False or task_json['projectId'] == None):
         # update the project record
         task = helpers.apply_json_to_model_instance(task, task_json)
         # save the updated data
         task.put()
         # Push notification email on the queue if we need to notify
-        if notification.should_notify(currentUserID,task,"createTask",wantsNotifications):
-          taskqueue.add(url='/mailer', params={'taskId': int(guid)})
+        if notification.should_notify(currentUserID,task,"updateTask",wantsNotifications):
+          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask"})
         # return the same record...
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(task_json))
@@ -306,9 +306,6 @@ class TaskHandler(webapp.RequestHandler):
       user = db.get(cukey)
       if not task == None:
         task.delete()
-        # Push notification email on the queue if we need to notify
-        if notification.should_notify(currentUserID,task,"createTask",wantsNotifications):
-          taskqueue.add(url='/mailer', params={'taskId': int(guid)})
         self.response.set_status(204, "Deleted")
       else:
         self.response.set_status(404, "Not Found")
@@ -421,7 +418,8 @@ class ProjectHandler(webapp.RequestHandler):
 class MailWorker(webapp.RequestHandler):
   """The Mail worker works off the mail queue"""
   def post(self):
-    notification.send_notification(self.request.get('taskId'))
+    action = {"createTask": "created", "updateTask": "updated"}.get(self.request.get('action'))
+    notification.send_notification(self.request.get('taskId'), self.request.get('currentUUID'), action)
     
 
 def main():
