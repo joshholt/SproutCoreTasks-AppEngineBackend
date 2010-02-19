@@ -12,33 +12,33 @@ class User(db.Model):
   loginName = db.StringProperty(required=True, default="(NA)")
   role = db.StringProperty(required=True, default="_Guest")
   #preferences = db.StringProperty() -- NOT Used yet.
-  email = db.EmailProperty()
-  password = db.StringProperty()
-  authToken = db.StringProperty()
-  createdAt = db.IntegerProperty()
-  updatedAt = db.IntegerProperty()
+  email = db.EmailProperty(required=False)
+  password = db.StringProperty(required=False)
+  authToken = db.StringProperty(required=False)
+  createdAt = db.IntegerProperty(required=False)
+  updatedAt = db.IntegerProperty(required=False)
 
 
 class Project(db.Model):
   """ This is the Project Model"""
   name = db.StringProperty(required=True, default="(No Name Project)")
-  description = db.TextProperty()
-  timeLeft = db.StringProperty()
-  createdAt = db.IntegerProperty()
-  updatedAt = db.IntegerProperty()
+  description = db.TextProperty(required=False)
+  timeLeft = db.StringProperty(required=False)
+  createdAt = db.IntegerProperty(required=False)
+  updatedAt = db.IntegerProperty(required=False)
 
 
 class Task(db.Model):
   """ This is the Task Model"""
   name = db.StringProperty(required=True, default="(No Name Task)")
-  description = db.TextProperty()
-  projectId = db.IntegerProperty()
+  description = db.TextProperty(required=False)
+  projectId = db.IntegerProperty(required=False)
   priority = db.StringProperty(default="_Medium")
-  effort = db.StringProperty()
+  effort = db.StringProperty(required=False)
   submitterId = db.IntegerProperty() # These keep changing
   assigneeId = db.IntegerProperty()  # These keep changing
   type = db.StringProperty(default="_Other")
   developmentStatus = db.StringProperty(default="_Planned")
   validation = db.StringProperty(default="_Untested")
-  createdAt = db.IntegerProperty()
-  updatedAt = db.IntegerProperty()
+  createdAt = db.IntegerProperty(required=False)
+  updatedAt = db.IntegerProperty(required=False)
