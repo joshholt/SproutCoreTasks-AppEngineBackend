@@ -36,7 +36,7 @@ def should_notify(currentUserID, task, action, wantsNotifications = True):
     
   return retVal
 
-def send_notification(taskID, currentUserID, action):
+def send_notification(taskID, currentUserID, action, status):
   """sends a test email"""
   # Get information about this task and the assignee and submitter
   task_key = db.Key.from_path('Task', int(taskID))
@@ -63,12 +63,18 @@ def send_notification(taskID, currentUserID, action):
         message.to = "%s" % assignee.email
       if submitter != None and submitter.email != None and task.submitterId != currentUserID:
         message.cc = "%s" % submitter.email
+      
+      newStatus = task.developmentStatus.replace('_','') if task.developmentStatus != None else "Unspecified"
+      oldStatus = status.replace('_','') if status != None else "Unspecified"
+      
+      bodyText = "Status:\t\t%s" % newStatus if newStatus == oldStatus else "Status:\t\t%s -> %s" % (oldStatus, newStatus)
+      message.body = bodyText;
         
-      message.body = """Name:\t\t'%s'
+      message.body += """Name:\t\t'%s'
 
 Type:\t\t'%s'
 Priority:\t\t'%s'
-Status:\t\t'%s'
+
 Validation:\t'%s'
       
 Submitter:\t'%s %s'
@@ -82,7 +88,6 @@ Description:
       """ % (task.name,
        task.type.replace('_','') if not task.type == None else "Unspecified", 
        task.priority.replace('_','') if not task.priority == None else "Unspecified", 
-       task.developmentStatus.replace('_','') if not task.developmentStatus == None else "Unspecified", 
        task.validation.replace('_','') if not task.validation == None else "Unspecified", 
        submitter.name if not submitter == None else "Unassigned", "(" + submitter.loginName + ")" if not submitter == None else "",
        assignee.name if not assignee == None else "Unassigned", "(" + assignee.loginName + ")" if not assignee == None else "",
