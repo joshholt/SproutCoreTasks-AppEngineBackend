@@ -276,6 +276,8 @@ class TaskHandler(webapp.RequestHandler):
     key = db.Key.from_path('Task', int(guid))
     task = db.get(key)
     if task != None:
+      # cache current values before updates
+      taskStatus = task.developmentStatus
       # collect the json from the request
       task_json = simplejson.loads(self.request.body)
       # if the user is a guest the project must be unallocated
@@ -290,7 +292,7 @@ class TaskHandler(webapp.RequestHandler):
         task.put()
         # Push notification email on the queue if we need to notify
         if notification.should_notify(currentUserID,task,"updateTask",wantsNotifications):
-          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask", 'status': task.developmentStatus})
+          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask", 'status': taskStatus})
         # return the same record...
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(task_json))
