@@ -167,8 +167,13 @@ class UserHandler(webapp.RequestHandler):
       user_json = simplejson.loads(self.request.body)
       # The following keeps Guests and Developers and Testers from being able
       # to change their role.
-      if str(user.role) != user_json['role'] and str(user.role) != "_Manager":
-        user_json['role'] = user.role
+      currentUserID = self.request.params['UUID']
+      cukey = db.Key.from_path('User', int(currentUserID))
+      cuser = db.get(cukey)
+      user_json['whoami'] = cuser.name;
+      if str(user.role) != user_json['role'] and str(cuser.role) != "_Manager":
+        user_json['role'] = str(user.role)
+        self.response.set_status(401, "Not Authorized")
       # update the record
       user = helpers.apply_json_to_model_instance(user, user_json)
       # save the record
@@ -191,7 +196,7 @@ class UserHandler(webapp.RequestHandler):
       else:
         self.response.set_status(404, "Not Found")
     else:
-      self.response.set_status(401, "Not Atuhorized")
+      self.response.set_status(401, "Not Authorized")
   
 
 
@@ -233,7 +238,7 @@ class TasksHandler(webapp.RequestHandler):
       guid = task.key().id_or_name()
       # Push notification email on the queue if the task has some sort of status, etc..
       if notification.should_notify(currentUserID,task,"createTask", wantsNotifications ):
-        taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "createTask"})
+        taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "createTask", 'status': task.developmentStatus})
       new_url = "/tasks-server/task/%s" % guid
       task_json["id"] = guid
       self.response.set_status(201, "Task created")
@@ -285,7 +290,7 @@ class TaskHandler(webapp.RequestHandler):
         task.put()
         # Push notification email on the queue if we need to notify
         if notification.should_notify(currentUserID,task,"updateTask",wantsNotifications):
-          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask"})
+          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask", 'status': task.developmentStatus})
         # return the same record...
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(task_json))
@@ -419,7 +424,8 @@ class MailWorker(webapp.RequestHandler):
   """The Mail worker works off the mail queue"""
   def post(self):
     action = {"createTask": "created", "updateTask": "updated"}.get(self.request.get('action'))
-    notification.send_notification(self.request.get('taskId'), self.request.get('currentUUID'), action)
+    status = self.request.get('status')
+    notification.send_notification(self.request.get('taskId'), self.request.get('currentUUID'), action, status)
     
 
 def main():
