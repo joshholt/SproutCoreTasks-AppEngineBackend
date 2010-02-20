@@ -8,9 +8,9 @@ from google.appengine.ext import db
 
 class User(db.Model):
   """ This is the User Model"""
-  name = db.StringProperty(required=True, default="(No Name)")
-  loginName = db.StringProperty(required=True, default="(NA)")
-  role = db.StringProperty(required=True, default="_Guest")
+  name = db.StringProperty(required=True, default="_FirstLast")
+  loginName = db.StringProperty(required=True, default="_Initials")
+  role = db.StringProperty(required=True, default="_Developer")
   #preferences = db.StringProperty() -- NOT Used yet.
   email = db.EmailProperty(required=False)
   password = db.StringProperty(required=False)
@@ -21,7 +21,7 @@ class User(db.Model):
 
 class Project(db.Model):
   """ This is the Project Model"""
-  name = db.StringProperty(required=True, default="(No Name Project)")
+  name = db.StringProperty(required=True, default="_NewProject")
   description = db.TextProperty(required=False)
   timeLeft = db.StringProperty(required=False)
   createdAt = db.IntegerProperty(required=False)
@@ -30,7 +30,7 @@ class Project(db.Model):
 
 class Task(db.Model):
   """ This is the Task Model"""
-  name = db.StringProperty(required=True, default="(No Name Task)")
+  name = db.StringProperty(required=True, default="_NewTask")
   description = db.TextProperty(required=False)
   projectId = db.IntegerProperty(required=False)
   priority = db.StringProperty(default="_Medium")
