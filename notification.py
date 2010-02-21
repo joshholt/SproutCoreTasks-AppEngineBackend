@@ -70,23 +70,30 @@ def send_notification(taskID, currentUserID, action, name, ttype, priority, stat
       
       newType = "'" + task.type.replace('_','') + "'" if task.type != None else "Unspecified"
       oldType = "'" + ttype.replace('_','') + "'" if ttype != None else "Unspecified"
+      if name == "New Task":
+        oldType = newType
       message.body += "Type:\t\t%s\n" % newType if newType == oldType else "Type:\t\t%s => %s\n" % (oldType, newType)
         
       newPriority = "'" + task.priority.replace('_','') + "'" if task.priority != None else "Unspecified"
       oldPriority = "'" + priority.replace('_','') + "'" if priority != None else "Unspecified"
+      if name == "New Task":
+        oldPriority = newPriority
       message.body += "Priority:\t\t%s\n" % newPriority if newPriority == oldPriority else "Priority:\t\t%s => %s\n" % (oldPriority, newPriority)
         
       newStatus = "'" + task.developmentStatus.replace('_','') + "'" if task.developmentStatus != None else "Unspecified"
       oldStatus = "'" + status.replace('_','') + "'" if status != None else "Unspecified"
+      if name == "New Task":
+        oldStatus = newStatus
       message.body += "Status:\t\t%s\n" % newStatus if newStatus == oldStatus else "Status:\t\t%s => %s\n" % (oldStatus, newStatus)
         
       newValidation = "'" + task.validation.replace('_','') + "'" if task.validation != None else "Unspecified"
       oldValidation = "'" + validation.replace('_','') + "'" if validation != None else "Unspecified"
+      if name == "New Task":
+        oldValidation = newValidation
       message.body += "Validation:\t%s\n" % newValidation if newValidation == oldValidation else "Validation:\t%s => %s\n" % (oldValidation, newValidation)
         
       project_name = project.name if task.projectId != None else "Unallocated"
       message.body += """
-
 Submitter:\t'%s %s'
 Assignee:\t'%s %s'
       
