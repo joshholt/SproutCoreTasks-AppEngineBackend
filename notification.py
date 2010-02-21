@@ -36,7 +36,7 @@ def should_notify(currentUserID, task, action, wantsNotifications = True):
     
   return retVal
 
-def send_notification(taskID, currentUserID, action, status):
+def send_notification(taskID, currentUserID, action, name, ttype, priority, status, validation):
   """sends a test email"""
   # Get information about this task and the assignee and submitter
   task_key = db.Key.from_path('Task', int(taskID))
@@ -64,19 +64,28 @@ def send_notification(taskID, currentUserID, action, status):
       if submitter != None and submitter.email != None and task.submitterId != currentUserID:
         message.cc = "%s" % submitter.email
       
-      newStatus = task.developmentStatus.replace('_','') if task.developmentStatus != None else "Unspecified"
-      oldStatus = status.replace('_','') if status != None else "Unspecified"
+      newName = task.name if task.name != None else "Unspecified"
+      oldName = name if name != None else "Unspecified"
+      message.body = "Name:\t\t%s\n\n" % newName if newName == oldName else "Name:\n%s\n=>\n%s\n\n" % (oldName, newName)
       
-      bodyText = "Status:\t\t%s" % newStatus if newStatus == oldStatus else "Status:\t\t%s -> %s" % (oldStatus, newStatus)
-      message.body = bodyText;
+      newType = "'" + task.type.replace('_','') + "'" if task.type != None else "Unspecified"
+      oldType = "'" + ttype.replace('_','') + "'" if ttype != None else "Unspecified"
+      message.body += "Type:\t\t%s\n" % newType if newType == oldType else "Type:\t\t%s => %s\n" % (oldType, newType)
         
-      message.body += """Name:\t\t'%s'
+      newPriority = "'" + task.priority.replace('_','') + "'" if task.priority != None else "Unspecified"
+      oldPriority = "'" + priority.replace('_','') + "'" if priority != None else "Unspecified"
+      message.body += "Priority:\t\t%s\n" % newPriority if newPriority == oldPriority else "Priority:\t\t%s => %s\n" % (oldPriority, newPriority)
+        
+      newStatus = "'" + task.developmentStatus.replace('_','') + "'" if task.developmentStatus != None else "Unspecified"
+      oldStatus = "'" + status.replace('_','') + "'" if status != None else "Unspecified"
+      message.body += "Status:\t\t%s\n" % newStatus if newStatus == oldStatus else "Status:\t\t%s => %s\n" % (oldStatus, newStatus)
+        
+      newValidation = "'" + task.validation.replace('_','') + "'" if task.validation != None else "Unspecified"
+      oldValidation = "'" + validation.replace('_','') + "'" if validation != None else "Unspecified"
+      message.body += "Validation:\t%s\n" % newValidation if newValidation == oldValidation else "Validation:\t%s => %s\n" % (oldValidation, newValidation)
+        
+      message.body += """
 
-Type:\t\t'%s'
-Priority:\t\t'%s'
-
-Validation:\t'%s'
-      
 Submitter:\t'%s %s'
 Assignee:\t'%s %s'
       
@@ -85,11 +94,7 @@ Project:\t\t'%s'
       
 Description:
 '%s'
-      """ % (task.name,
-       task.type.replace('_','') if not task.type == None else "Unspecified", 
-       task.priority.replace('_','') if not task.priority == None else "Unspecified", 
-       task.validation.replace('_','') if not task.validation == None else "Unspecified", 
-       submitter.name if not submitter == None else "Unassigned", "(" + submitter.loginName + ")" if not submitter == None else "",
+      """ % (submitter.name if not submitter == None else "Unassigned", "(" + submitter.loginName + ")" if not submitter == None else "",
        assignee.name if not assignee == None else "Unassigned", "(" + assignee.loginName + ")" if not assignee == None else "",
        task.effort if not task.effort == None else "Unspecified", 
        project_name,

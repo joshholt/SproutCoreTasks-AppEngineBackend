@@ -277,7 +277,11 @@ class TaskHandler(webapp.RequestHandler):
     task = db.get(key)
     if task != None:
       # cache current values before updates
+      taskName = task.name
+      taskType = task.type
+      taskPriority = task.priority
       taskStatus = task.developmentStatus
+      taskValidation = task.validation
       # collect the json from the request
       task_json = simplejson.loads(self.request.body)
       # if the user is a guest the project must be unallocated
@@ -292,7 +296,7 @@ class TaskHandler(webapp.RequestHandler):
         task.put()
         # Push notification email on the queue if we need to notify
         if notification.should_notify(currentUserID,task,"updateTask",wantsNotifications):
-          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask", 'status': taskStatus})
+          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask", 'name': taskName, 'type': taskType, 'priority': taskPriority, 'status': taskStatus, 'validation': taskValidation})
         # return the same record...
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(task_json))
@@ -426,8 +430,12 @@ class MailWorker(webapp.RequestHandler):
   """The Mail worker works off the mail queue"""
   def post(self):
     action = {"createTask": "created", "updateTask": "updated"}.get(self.request.get('action'))
+    name = self.request.get('name')
+    ttype = self.request.get('type')
+    priority = self.request.get('priority')
     status = self.request.get('status')
-    notification.send_notification(self.request.get('taskId'), self.request.get('currentUUID'), action, status)
+    validation = self.request.get('validation')
+    notification.send_notification(self.request.get('taskId'), self.request.get('currentUUID'), action, name, ttype, priority, status, validation)
     
 
 def main():
