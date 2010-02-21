@@ -56,8 +56,8 @@ def send_notification(taskID, currentUserID, action, name, ttype, priority, stat
       assignee_key = db.Key.from_path('User', int(task.assigneeId))
       assignee = db.get(assignee_key)
     if submitter != None or assignee != None:
-      project_name = project.name if task.projectId != None else "Unallocated"
-      message = mail.EmailMessage(sender="Tasks <suvajit.gupta@eloqua.com>", subject="Task #%s %s by %s (%s)" % (task.key().id_or_name(), action, currentUser.name, currentUser.loginName ))
+      
+      message = mail.EmailMessage(sender="Tasks <suvajit.gupta@eloqua.com>", subject="Task #%s %s by %s (%s)" % (task.key().id_or_name(), action if name != "New Task" else "created", currentUser.name, currentUser.loginName ))
       message.to = ';'; message.cc = ';';
       if assignee != None and assignee.email != None and task.assigneeId != currentUserID:
         message.to = "%s" % assignee.email
@@ -65,7 +65,7 @@ def send_notification(taskID, currentUserID, action, name, ttype, priority, stat
         message.cc = "%s" % submitter.email
       
       newName = task.name if task.name != None else "Unspecified"
-      oldName = name if name != None else "Unspecified"
+      oldName = task.name if name == "New Task" else name
       message.body = "Name:\t\t%s\n\n" % newName if newName == oldName else "Name:\n%s\n=>\n%s\n\n" % (oldName, newName)
       
       newType = "'" + task.type.replace('_','') + "'" if task.type != None else "Unspecified"
@@ -84,6 +84,7 @@ def send_notification(taskID, currentUserID, action, name, ttype, priority, stat
       oldValidation = "'" + validation.replace('_','') + "'" if validation != None else "Unspecified"
       message.body += "Validation:\t%s\n" % newValidation if newValidation == oldValidation else "Validation:\t%s => %s\n" % (oldValidation, newValidation)
         
+      project_name = project.name if task.projectId != None else "Unallocated"
       message.body += """
 
 Submitter:\t'%s %s'

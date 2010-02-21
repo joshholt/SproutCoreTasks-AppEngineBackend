@@ -238,7 +238,7 @@ class TasksHandler(webapp.RequestHandler):
       guid = task.key().id_or_name()
       # Push notification email on the queue if the task has some sort of status, etc..
       if notification.should_notify(currentUserID,task,"createTask", wantsNotifications ):
-        taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "createTask", 'status': task.developmentStatus})
+        taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "createTask", 'name': "New Task"})
       new_url = "/tasks-server/task/%s" % guid
       task_json["id"] = guid
       self.response.set_status(201, "Task created")
@@ -429,7 +429,7 @@ class ProjectHandler(webapp.RequestHandler):
 class MailWorker(webapp.RequestHandler):
   """The Mail worker works off the mail queue"""
   def post(self):
-    action = {"createTask": "created", "updateTask": "updated"}.get(self.request.get('action'))
+    action = {"createTask": "created", "updateTask": "updated", "deleteTask": "deleted"}.get(self.request.get('action'))
     name = self.request.get('name')
     ttype = self.request.get('type')
     priority = self.request.get('priority')
