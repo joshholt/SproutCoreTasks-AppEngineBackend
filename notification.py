@@ -63,8 +63,8 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
       message.to = ';'; message.cc = ';';
       if assignee != None and assignee.email != None and assignee_key.id_or_name() != currentUserId:
         message.to = "%s" % assignee.email
-      if submitter != None and submitter.email != None and submitter_key.id_or_name() != currentUserId:
-        message.cc = "%s" % submitter.email
+      # if submitter != None and submitter.email != None and submitter_key.id_or_name() != currentUserId:
+      #   message.cc = "%s" % submitter.email
       
       newName = task.name if task != None and task.name != None else "Unspecified"
       oldName = newName if name == "New Task" else name
@@ -93,23 +93,35 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
       if name == "New Task":
         oldValidation = newValidation
       message.body += "Validation:\t%s\n" % oldValidation if action == "deleted" or newValidation == oldValidation else "Validation:\t%s => %s\n" % (oldValidation, newValidation)
-      #   
+
+      newSubmitter = db.get(db.Key.from_path('User', int(task.submitterId))) if task != None and task.submitterId != None else None
+      newSubmitterName = "'" + newSubmitter.name + "'" if newSubmitter != None else "Unassigned"
+      oldSubmitter = db.get(db.Key.from_path('User', int(submitterId))) if submitterId != 'None' else None
+      oldSubmitterName = "'" + oldSubmitter.name + "'" if oldSubmitter != None else "Unassigned"
+      if name == "New Task":
+        oldSubmitterName = newSubmitterName
+      message.body += "\nSubmitter:\t%s\n" % oldSubmitterName if action == "deleted" or newSubmitterName == oldSubmitterName else "\nSubmitter:\t%s => %s\n" % (oldSubmitterName, newSubmitterName)
+
+      newAssignee = db.get(db.Key.from_path('User', int(task.assigneeId))) if task != None and task.assigneeId != None else None
+      newAssigneeName = "'" + newAssignee.name + "'" if newAssignee != None else "Unassigned"
+      oldAssignee = db.get(db.Key.from_path('User', int(assigneeId))) if assigneeId != 'None' else None
+      oldAssigneeName = "'" + oldAssignee.name + "'" if oldAssignee != None else "Unassigned"
+      if name == "New Task":
+        oldAssigneeName = newAssigneeName
+      message.body += "Assignee:\t%s\n" % oldAssigneeName if action == "deleted" or newAssigneeName == oldAssigneeName else "Assignee:\t%s => %s\n" % (oldAssigneeName, newAssigneeName)
+
       # if task != None and task.projectId != None:
       #   project_key = db.Key.from_path('Project', int(task.projectId))
       #   project = db.get(project_key)
       #   project_name = project.name if task.projectId != None else "Unallocated"
 #       message.body += """
-# Submitter:\t'%s'
-# Assignee:\t'%s'
 #       
 # Effort:\t\t'%s'
 # Project:\t\t'%s'
 #       
 # Description:
 # '%s'
-#       """ % (submitter.name if not submitter == None else "Unassigned",
-#        assignee.name if not assignee == None else "Unassigned",
-#        task.effort if not task.effort == None else "Unspecified", 
+#       """ % (task.effort if not task.effort == None else "Unspecified", 
 #        project_name,
 #        task.description if not task.description == None else "Unspecified")
        
