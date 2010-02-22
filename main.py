@@ -167,8 +167,8 @@ class UserHandler(webapp.RequestHandler):
       user_json = simplejson.loads(self.request.body)
       # The following keeps Guests and Developers and Testers from being able
       # to change their role.
-      currentUserID = self.request.params['UUID']
-      cukey = db.Key.from_path('User', int(currentUserID))
+      currentUserId = self.request.params['UUID']
+      cukey = db.Key.from_path('User', int(currentUserId))
       cuser = db.get(cukey)
       user_json['whoami'] = cuser.name;
       if str(user.role) != user_json['role'] and str(cuser.role) != "_Manager":
@@ -201,7 +201,7 @@ class UserHandler(webapp.RequestHandler):
 
 
 class TasksHandler(webapp.RequestHandler):
-  # Retrieve a list of all the Users.
+  # Retrieve a list of all the Tasks.
   def get(self):
     # collect saved tasks
     tasks_json = []
@@ -227,17 +227,17 @@ class TasksHandler(webapp.RequestHandler):
     # collect the data from the record
     task_json = simplejson.loads(self.request.body)
     # if the user is a guest the project must be unallocated
-    currentUserID = self.request.params['UUID']
-    cukey = db.Key.from_path('User', int(currentUserID))
+    currentUserId = self.request.params['UUID']
+    cukey = db.Key.from_path('User', int(currentUserId))
     user = db.get(cukey)
     if str(user.role) != '_Guest' or (task_json.has_key('projectId') == False or task_json['projectId'] == None):
-      # create a new taks with the passed in json
+      # create a new task with the passed in json
       task = helpers.apply_json_to_model_instance(Task(),task_json)
       # save task
       task.put()
       guid = task.key().id_or_name()
       # Push notification email on the queue if the task has some sort of status, etc..
-      if notification.should_notify(currentUserID,task,"createTask", wantsNotifications ):
+      if notification.should_notify(currentUserId,task,"createTask", wantsNotifications):
         taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "createTask", 'name': "New Task"})
       new_url = "/tasks-server/task/%s" % guid
       task_json["id"] = guid
@@ -282,12 +282,14 @@ class TaskHandler(webapp.RequestHandler):
       taskPriority = task.priority
       taskStatus = task.developmentStatus
       taskValidation = task.validation
+      taskSubmitterId = task.submitterId
+      taskAssigneeId = task.assigneeId
       # collect the json from the request
       task_json = simplejson.loads(self.request.body)
       # if the user is a guest the project must be unallocated
       wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
-      currentUserID = self.request.params['UUID']
-      cukey = db.Key.from_path('User', int(currentUserID))
+      currentUserId = self.request.params['UUID']
+      cukey = db.Key.from_path('User', int(currentUserId))
       user = db.get(cukey)
       if str(user.role) != '_Guest' or (task_json.has_key('projectId') == False or task_json['projectId'] == None):
         # update the project record
@@ -295,8 +297,8 @@ class TaskHandler(webapp.RequestHandler):
         # save the updated data
         task.put()
         # Push notification email on the queue if we need to notify
-        if notification.should_notify(currentUserID,task,"updateTask",wantsNotifications):
-          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask", 'name': taskName, 'type': taskType, 'priority': taskPriority, 'status': taskStatus, 'validation': taskValidation})
+        if notification.should_notify(currentUserId,task,"updateTask",wantsNotifications):
+          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask", 'name': taskName, 'type': taskType, 'priority': taskPriority, 'status': taskStatus, 'validation': taskValidation, 'submitterId': taskSubmitterId, 'assigneeId': taskAssigneeId})
         # return the same record...
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(task_json))
@@ -312,10 +314,21 @@ class TaskHandler(webapp.RequestHandler):
       key = db.Key.from_path('Task', int(guid))
       task = db.get(key)
       wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
-      currentUserID = self.request.params['UUID']
-      cukey = db.Key.from_path('User', int(currentUserID))
+      currentUserId = self.request.params['UUID']
+      cukey = db.Key.from_path('User', int(currentUserId))
       user = db.get(cukey)
       if not task == None:
+        # cache current values before updates
+        taskName = task.name
+        taskType = task.type
+        taskPriority = task.priority
+        taskStatus = task.developmentStatus
+        taskValidation = task.validation
+        taskSubmitterId = task.submitterId
+        taskAssigneeId = task.assigneeId
+        # Push notification email on the queue if we need to notify
+        if notification.should_notify(currentUserId,task,"deleteTask",wantsNotifications):
+          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "deleteTask", 'name': taskName, 'type': taskType, 'priority': taskPriority, 'status': taskStatus, 'validation': taskValidation, 'submitterId': taskSubmitterId, 'assigneeId': taskAssigneeId})
         task.delete()
         self.response.set_status(204, "Deleted")
       else:
@@ -435,7 +448,9 @@ class MailWorker(webapp.RequestHandler):
     priority = self.request.get('priority')
     status = self.request.get('status')
     validation = self.request.get('validation')
-    notification.send_notification(self.request.get('taskId'), self.request.get('currentUUID'), action, name, ttype, priority, status, validation)
+    submitterId = self.request.get('submitterId')
+    assigneeId = self.request.get('assigneeId')
+    notification.send_notification(self.request.get('taskId'), self.request.get('currentUUID'), action, name, ttype, priority, status, validation, submitterId, assigneeId)
     
 
 def main():

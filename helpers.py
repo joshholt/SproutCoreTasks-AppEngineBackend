@@ -41,9 +41,9 @@ def generateAuthToken():
 #-----------------------------------------------------------------------------
 # AUTHORIZATION
 #-----------------------------------------------------------------------------
-def authorized(userID, authToken, action):
+def authorized(userId, authToken, action):
   """This method checks the user's authToken against what's stored in the DB"""
-  key = db.Key.from_path('User', int(userID))
+  key = db.Key.from_path('User', int(userId))
   user = db.get(key)
   retVal = False
   if not user == None:
