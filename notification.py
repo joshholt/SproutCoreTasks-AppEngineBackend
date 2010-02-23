@@ -38,9 +38,6 @@ def should_notify(currentUserId, task, action, wantsNotifications = True):
 
 def send_notification(taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId, effort):
   """sends email notification"""
-  # message = mail.EmailMessage(sender="DEBUG <suvajit.gupta@eloqua.com>", subject="DEBUG: Task #%s %s" % (taskId, action), to="suvajit.gupta@eloqua.com", body="Name: %s" % (name))
-  # message.send()
-  
   # Get information about this task and the assignee and submitter
   task = None;
   if action != "deleted":
@@ -63,40 +60,40 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
       message.to = ';'; message.cc = ';';
       if assignee != None and assignee.email != None and assignee_key.id_or_name() != currentUserId:
         message.to = "%s" % assignee.email
-      # if submitter != None and submitter.email != None and submitter_key.id_or_name() != currentUserId:
-      #   message.cc = "%s" % submitter.email
+      if submitter != None and submitter.email != None and submitter_key.id_or_name() != currentUserId:
+        message.cc = "%s" % submitter.email
       
       newName = task.name if task != None and task.name != None else "Unspecified"
       oldName = newName if name == "New Task" else name
       message.body = "Name:\t\t%s\n\n" % oldName if action == "deleted" or newName == oldName else "Name:\t\t%s\n=>\t\t%s\n\n" % (oldName, newName)
       
       newType = "'" + task.type.replace('_','') + "'" if task != None and task.type != None else "Unspecified"
-      oldType = "'" + ttype.replace('_','') + "'" if ttype != None else "Unspecified"
+      oldType = "'" + ttype.replace('_','') + "'" if ttype != 'None' else "Unspecified"
       if name == "New Task":
         oldType = newType
       message.body += "Type:\t\t%s\n" % oldType if action == "deleted" or newType == oldType else "Type:\t\t%s => %s\n" % (oldType, newType)
         
       newPriority = "'" + task.priority.replace('_','') + "'" if task != None and task.priority != None else "Unspecified"
-      oldPriority = "'" + priority.replace('_','') + "'" if priority != None else "Unspecified"
+      oldPriority = "'" + priority.replace('_','') + "'" if priority != 'None' else "Unspecified"
       if name == "New Task":
         oldPriority = newPriority
       message.body += "Priority:\t\t%s\n" % oldPriority if action == "deleted" or newPriority == oldPriority else "Priority:\t\t%s => %s\n" % (oldPriority, newPriority)
         
       newStatus = "'" + task.developmentStatus.replace('_','') + "'" if task != None and task.developmentStatus != None else "Unspecified"
-      oldStatus = "'" + status.replace('_','') + "'" if status != None else "Unspecified"
+      oldStatus = "'" + status.replace('_','') + "'" if status != 'None' else "Unspecified"
       if name == "New Task":
         oldStatus = newStatus
       message.body += "Status:\t\t%s\n" % oldStatus if action == "deleted" or newStatus == oldStatus else "Status:\t\t%s => %s\n" % (oldStatus, newStatus)
         
       newValidation = "'" + task.validation.replace('_','') + "'" if task != None and task.validation != None else "Unspecified"
-      oldValidation = "'" + validation.replace('_','') + "'" if validation != None else "Unspecified"
+      oldValidation = "'" + validation.replace('_','') + "'" if validation != 'None' else "Unspecified"
       if name == "New Task":
         oldValidation = newValidation
       message.body += "Validation:\t%s\n" % oldValidation if action == "deleted" or newValidation == oldValidation else "Validation:\t%s => %s\n" % (oldValidation, newValidation)
 
       newSubmitter = db.get(db.Key.from_path('User', int(task.submitterId))) if task != None and task.submitterId != None else None
       newSubmitterName = "'" + newSubmitter.name + "'" if newSubmitter != None else "Unassigned"
-      if submitterId != 'None':
+      if submitterId != 'None' and submitterId != '':
         oldSubmitter = db.get(db.Key.from_path('User', int(submitterId)))
       else:
         oldSubmitter = None
@@ -107,14 +104,17 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
 
       newAssignee = db.get(db.Key.from_path('User', int(task.assigneeId))) if task != None and task.assigneeId != None else None
       newAssigneeName = "'" + newAssignee.name + "'" if newAssignee != None else "Unassigned"
-      oldAssignee = db.get(db.Key.from_path('User', int(assigneeId))) if assigneeId != 'None' else None
+      if assigneeId != 'None' and assigneeId != '':
+        oldAssignee = db.get(db.Key.from_path('User', int(assigneeId)))
+      else:
+        oldAssignee = None
       oldAssigneeName = "'" + oldAssignee.name + "'" if oldAssignee != None else "Unassigned"
       if name == "New Task":
         oldAssigneeName = newAssigneeName
       message.body += "Assignee:\t%s\n" % oldAssigneeName if action == "deleted" or newAssigneeName == oldAssigneeName else "Assignee:\t%s => %s\n" % (oldAssigneeName, newAssigneeName)
 
       newEffort = "'" + task.effort + "'" if task != None and task.effort != None else "Unspecified"
-      oldEffort = "'" + effort + "'" if effort != None else "Unspecified"
+      oldEffort = "'" + effort + "'" if effort != 'None' else "Unspecified"
       if name == "New Task":
         oldEffort = newEffort
       message.body += "\nEffort:\t\t%s\n" % oldEffort if action == "deleted" or newEffort == oldEffort else "\nEffort:\t\t%s => %s\n" % (oldEffort, newEffort)
