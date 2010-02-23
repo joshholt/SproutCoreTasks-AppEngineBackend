@@ -49,11 +49,15 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
   if action == "deleted" or task != None:
     submitter = None; assignee = None;
     if action == "deleted" or (task != None and task.submitterId != None):
-      submitter_key = db.Key.from_path('User', int(task.submitterId if action != "deleted" else submitterId))
-      submitter = db.get(submitter_key)
+      sid = task.submitterId if action != "deleted" else submitterId
+      if sid != 'None':
+        submitter_key = db.Key.from_path('User', int(sid))
+        submitter = db.get(submitter_key)
     if action == "deleted" or (task != None and task.assigneeId != None):
-      assignee_key = db.Key.from_path('User', int(task.assigneeId if action != "deleted" else assigneeId))
-      assignee = db.get(assignee_key)
+      aid = task.assigneeId if action != "deleted" else assigneeId
+      if aid != 'None':
+        assignee_key = db.Key.from_path('User', int(aid))
+        assignee = db.get(assignee_key)
     if submitter != None or assignee != None:
       
       message = mail.EmailMessage(sender="Tasks Server <suvajit.gupta@eloqua.com>", subject="Task #%s %s by %s" % (taskId, action if name != "New Task" else "created", currentUser.name))
