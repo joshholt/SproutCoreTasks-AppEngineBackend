@@ -36,7 +36,7 @@ def should_notify(currentUserId, task, action, wantsNotifications = True):
     
   return retVal
 
-def send_notification(taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId, effort):
+def send_notification(taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId, effort, projectId):
   """sends email notification"""
   # Get information about this task and the assignee and submitter
   task = None;
@@ -119,16 +119,21 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
         oldEffort = newEffort
       message.body += "\nEffort:\t\t%s\n" % oldEffort if action == "deleted" or newEffort == oldEffort else "\nEffort:\t\t%s => %s\n" % (oldEffort, newEffort)
 
-      # if task != None and task.projectId != None:
-      #   project_key = db.Key.from_path('Project', int(task.projectId))
-      #   project = db.get(project_key)
-      #   project_name = project.name if task.projectId != None else "Unallocated"
+      newProject = db.get(db.Key.from_path('Project', int(task.projectId))) if task != None and task.projectId != None else None
+      newProjectName = "'" + newProject.name + "'" if newProject != None else "Unallocated"
+      if projectId != 'None' and projectId != '':
+        oldProject = db.get(db.Key.from_path('Project', int(projectId)))
+      else:
+        oldProject = None
+      oldProjectName = "'" + oldProject.name + "'" if oldProject != None else "Unallocated"
+      if name == "New Task":
+        oldProjectName = newProjectName
+      message.body += "Project:\t%s\n" % oldProjectName if action == "deleted" or newProjectName == oldProjectName else "Project:\t%s => %s\n" % (oldProjectName, newProjectName)
+
 #       message.body += """
-# Project:\t\t'%s'
 # Description:
 # '%s'
-#       """ % (project_name,
-#        task.description if not task.description == None else "Unspecified")
+#       """ % (task.description if not task.description == None else "Unspecified")
        
     if message.to == ';' and message.cc != ';':
       message.to = message.cc; message.cc = ';'
