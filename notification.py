@@ -36,7 +36,7 @@ def should_notify(currentUserId, task, action, wantsNotifications = True):
     
   return retVal
 
-def send_notification(taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId, effort, projectId):
+def send_notification(taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId, effort, projectId, description):
   """sends email notification"""
   # Get information about this task and the assignee and submitter
   task = None;
@@ -130,11 +130,12 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
         oldProjectName = newProjectName
       message.body += "Project:\t\t%s\n" % oldProjectName if action == "deleted" or newProjectName == oldProjectName else "Project:\t\t%s => %s\n" % (oldProjectName, newProjectName)
 
-#       message.body += """
-# Description:
-# '%s'
-#       """ % (task.description if not task.description == None else "Unspecified")
-       
+      newDescription = task.description if task != None and task.description != None and task.description != '' else "Unspecified"
+      oldDescription = description if description != 'None'  and description != '' else "Unspecified"
+      if name == "New Task":
+        oldDescription = newDescription
+      message.body += "\nDescription:\n%s\n" % oldDescription if action == "deleted" or newDescription == oldDescription else "\nDescription:\n%s\n\n=>\n\n%s\n" % (oldDescription, newDescription)
+
     if message.to == ';' and message.cc != ';':
       message.to = message.cc; message.cc = ';'
     if message.to != ';' or message.cc != ';':
