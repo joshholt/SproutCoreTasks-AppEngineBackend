@@ -36,7 +36,7 @@ def should_notify(currentUserId, task, action, wantsNotifications = True):
     
   return retVal
 
-def send_notification(taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId):
+def send_notification(taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId, effort):
   """sends email notification"""
   # message = mail.EmailMessage(sender="DEBUG <suvajit.gupta@eloqua.com>", subject="DEBUG: Task #%s %s" % (taskId, action), to="suvajit.gupta@eloqua.com", body="Name: %s" % (name))
   # message.send()
@@ -96,7 +96,10 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
 
       newSubmitter = db.get(db.Key.from_path('User', int(task.submitterId))) if task != None and task.submitterId != None else None
       newSubmitterName = "'" + newSubmitter.name + "'" if newSubmitter != None else "Unassigned"
-      oldSubmitter = db.get(db.Key.from_path('User', int(submitterId))) if submitterId != 'None' else None
+      if submitterId != 'None':
+        oldSubmitter = db.get(db.Key.from_path('User', int(submitterId)))
+      else:
+        oldSubmitter = None
       oldSubmitterName = "'" + oldSubmitter.name + "'" if oldSubmitter != None else "Unassigned"
       if name == "New Task":
         oldSubmitterName = newSubmitterName
@@ -110,19 +113,21 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
         oldAssigneeName = newAssigneeName
       message.body += "Assignee:\t%s\n" % oldAssigneeName if action == "deleted" or newAssigneeName == oldAssigneeName else "Assignee:\t%s => %s\n" % (oldAssigneeName, newAssigneeName)
 
+      newEffort = "'" + task.effort + "'" if task != None and task.effort != None else "Unspecified"
+      oldEffort = "'" + effort + "'" if effort != None else "Unspecified"
+      if name == "New Task":
+        oldEffort = newEffort
+      message.body += "\nEffort:\t\t%s\n" % oldEffort if action == "deleted" or newEffort == oldEffort else "\nEffort:\t\t%s => %s\n" % (oldEffort, newEffort)
+
       # if task != None and task.projectId != None:
       #   project_key = db.Key.from_path('Project', int(task.projectId))
       #   project = db.get(project_key)
       #   project_name = project.name if task.projectId != None else "Unallocated"
 #       message.body += """
-#       
-# Effort:\t\t'%s'
 # Project:\t\t'%s'
-#       
 # Description:
 # '%s'
-#       """ % (task.effort if not task.effort == None else "Unspecified", 
-#        project_name,
+#       """ % (project_name,
 #        task.description if not task.description == None else "Unspecified")
        
     if message.to == ';' and message.cc != ';':
