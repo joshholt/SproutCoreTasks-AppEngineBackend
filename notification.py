@@ -128,7 +128,7 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
       oldProjectName = "'" + oldProject.name + "'" if oldProject != None else "Unallocated"
       if name == "New Task":
         oldProjectName = newProjectName
-      message.body += "Project:\t%s\n" % oldProjectName if action == "deleted" or newProjectName == oldProjectName else "Project:\t%s => %s\n" % (oldProjectName, newProjectName)
+      message.body += "Project:\t\t%s\n" % oldProjectName if action == "deleted" or newProjectName == oldProjectName else "Project:\t\t%s => %s\n" % (oldProjectName, newProjectName)
 
 #       message.body += """
 # Description:
