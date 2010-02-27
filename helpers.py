@@ -54,7 +54,8 @@ def authorized(userId, authToken, action):
       "deleteProject": lambda role: True if role == "_Manager" else False,
       "createTask": True,
       "updateTask": True,
-      "deleteTask": lambda role: True if  not role == "_Guest" else False,
+      # TODO: tighten up control to match GUI - Guests can only delete tasks they submitted
+      "deleteTask": True,
       "createUser": lambda role: True if  role == "_Manager" else False,
       "updateUser": True,
       "deleteUser": lambda role: True if  role == "_Manager" else False

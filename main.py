@@ -187,7 +187,7 @@ class UserHandler(webapp.RequestHandler):
   # delete the user with a given id
   def delete(self, guid):
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      # find the matching task and delete it if found
+      # find the matching user and delete it if found
       key = db.Key.from_path('User', int(guid))
       user = db.get(key)
       if not user == None:
