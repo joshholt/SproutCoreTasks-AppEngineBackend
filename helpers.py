@@ -41,6 +41,7 @@ def generateAuthToken():
 #-----------------------------------------------------------------------------
 # AUTHORIZATION
 #-----------------------------------------------------------------------------
+# TODO: tighten up control to match GUI - Guests can only delete tasks they submitted
 def authorized(userId, authToken, action):
   """This method checks the user's authToken against what's stored in the DB"""
   key = db.Key.from_path('User', int(userId))
@@ -54,7 +55,6 @@ def authorized(userId, authToken, action):
       "deleteProject": lambda role: True if role == "_Manager" else False,
       "createTask": True,
       "updateTask": True,
-      # TODO: tighten up control to match GUI - Guests can only delete tasks they submitted
       "deleteTask": True,
       "createUser": lambda role: True if  role == "_Manager" else False,
       "updateUser": True,
