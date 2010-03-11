@@ -170,7 +170,6 @@ class UserHandler(webapp.RequestHandler):
       currentUserId = self.request.params['UUID']
       cukey = db.Key.from_path('User', int(currentUserId))
       cuser = db.get(cukey)
-      user_json['whoami'] = cuser.name;
       if str(user.role) != user_json['role'] and str(cuser.role) != "_Manager":
         user_json['role'] = str(user.role)
         self.response.set_status(401, "Not Authorized")
