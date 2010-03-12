@@ -12,7 +12,7 @@ class User(db.Model):
   loginName = db.StringProperty(required=True, default="_Initials")
   role = db.StringProperty(required=True, default="_Developer")
   #preferences = db.StringProperty() -- NOT Used yet.
-  email = db.EmailProperty(required=False)
+  email = db.StringProperty(required=False)
   password = db.StringProperty(required=False)
   authToken = db.StringProperty(required=False)
   createdAt = db.IntegerProperty(required=False)

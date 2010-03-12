@@ -145,8 +145,8 @@ class UserHandler(webapp.RequestHandler):
         "name": user.name,
         "loginName": user.loginName, "role": user.role,
         "preferences": user.preferences if user.preferences != None else {},
-        "authToken": user.authToken if user.authToken != None else "",
-        "email": user.email if user.email != None else "",
+        "authToken": user.authToken if user.authToken != None else '',
+        "email": user.email if user.email != '' else '',
         "createdAt": user.createdAt if user.createdAt != None else 0, 
         "updatedAt": user.updatedAt if user.updatedAt != None else 0 }
       
