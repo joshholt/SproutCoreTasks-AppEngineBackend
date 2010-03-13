@@ -62,9 +62,9 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
       
       message = mail.EmailMessage(sender="Tasks Server <suvajit.gupta@eloqua.com>", subject="Task #%s %s by %s" % (taskId, action if name != "New Task" else "created", currentUser.name))
       message.to = ';'; message.cc = ';';
-      if assignee != None and assignee.email != '' and assignee.name != currentUser.name:
+      if assignee != None and assignee.email != '' and assigneeId != currentUserId:
         message.to = "%s" % assignee.email
-      if submitter != None and submitter.email != '' and submitter.name != currentUser.name:
+      if submitter != None and submitter.email != '' and submitterId != currentUserId:
         message.cc = "%s" % submitter.email
       
       newName = task.name if task != None and task.name != None else "Unspecified"
