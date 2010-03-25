@@ -10,7 +10,7 @@
     
     ********* SOLVED *************
     
-    I've solved the issue below.. I had forgotten that python and a builtin 
+    I've solved the issue below.. I had forgotten that python and a builtin
     function "setattr(obj, attr, val)". If you want to see how it DRYed up
     the code you can look through the commit log.
     
@@ -34,7 +34,7 @@
            model.key = json[key]
         
         model.put()
-        
+     
      
      But it seems that you cannot do this b/c I remember that you cannot
      specify an object's attribute as a string and model instances are not
@@ -47,6 +47,9 @@
 """
 
 # App Engine Imports
+import logging
+import os
+import datetime
 import wsgiref.handlers
 from google.appengine.ext import webapp
 from google.appengine.ext import db
@@ -58,6 +61,7 @@ import models
 from models import User
 from models import Task
 from models import Project
+from models import Watch
 
 # Helper Imports
 import helpers,notification
@@ -102,16 +106,16 @@ class UsersHandler(webapp.RequestHandler):
       if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
         # collect the data from the record
         user_json = simplejson.loads(self.request.body)
-    
+        
         # create a user
         user = helpers.apply_json_to_model_instance(User(), user_json)
         # save the new user
         user.put()
-    
+        
         guid = user.key().id_or_name()
         new_url = "/tasks-server/user/%s" % guid
         user_json["id"] = guid
-    
+        
         self.response.set_status(201, "User created")
         self.response.headers['Location'] = new_url
         self.response.headers['Content-Type'] = 'text/json'
@@ -147,7 +151,7 @@ class UserHandler(webapp.RequestHandler):
         "preferences": user.preferences if user.preferences != None else {},
         "authToken": user.authToken if user.authToken != None else '',
         "email": user.email if user.email != '' else '',
-        "createdAt": user.createdAt if user.createdAt != None else 0, 
+        "createdAt": user.createdAt if user.createdAt != None else 0,
         "updatedAt": user.updatedAt if user.updatedAt != None else 0 }
       
       self.response.headers['Content-Type'] = 'application/json'
@@ -162,7 +166,7 @@ class UserHandler(webapp.RequestHandler):
     key = db.Key.from_path('User', int(guid))
     user = db.get(key)
     if not user == None:
-    
+      
       # collect the data from the record
       user_json = simplejson.loads(self.request.body)
       # The following keeps Guests and Developers and Testers from being able
@@ -182,7 +186,7 @@ class UserHandler(webapp.RequestHandler):
       self.response.out.write(simplejson.dumps(user_json))
     else:
       self.response.set_status(404, "User not found")
-
+  
   # delete the user with a given id
   def delete(self, guid):
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
@@ -196,7 +200,6 @@ class UserHandler(webapp.RequestHandler):
         self.response.set_status(404, "Not Found")
     else:
       self.response.set_status(401, "Not Authorized")
-  
 
 
 class TasksHandler(webapp.RequestHandler):
@@ -211,7 +214,7 @@ class TasksHandler(webapp.RequestHandler):
         "effort": task.effort, "submitterId": task.submitterId,
         "assigneeId": task.assigneeId, "type": task.type, "developmentStatus": task.developmentStatus,
         "validation": task.validation, "description": task.description,
-        "createdAt": task.createdAt if task.createdAt != None else 0, 
+        "createdAt": task.createdAt if task.createdAt != None else 0,
         "updatedAt": task.updatedAt if task.updatedAt != None else 0 }
       
       tasks_json.append(task_json)
@@ -225,6 +228,7 @@ class TasksHandler(webapp.RequestHandler):
     wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
     # collect the data from the record
     task_json = simplejson.loads(self.request.body)
+    logging.info(self.request.body)
     # if the user is a guest the project must be unallocated
     currentUserId = self.request.params['UUID']
     cukey = db.Key.from_path('User', int(currentUserId))
@@ -249,22 +253,22 @@ class TasksHandler(webapp.RequestHandler):
 
 
 class TaskHandler(webapp.RequestHandler):
-  """Deals with a single Task item""" 
+  """Deals with a single Task item"""
   def get(self, guid):
     """Retrieves a single task record and returns the JSON"""
     key = db.Key.from_path('Task', int(guid))
     task = db.get(key)
     if not task == None:
       guid = "%s" % task.key().id_or_name()
-      task_json = { "id": "%s" % guid, "name": task.name, 
+      task_json = { "id": "%s" % guid, "name": task.name,
         "priority": task.priority, "effort": task.effort,
         "projectId": task.projectId,
-        "submitterId": task.submitterId, "assigneeId": task.assigneeId, 
+        "submitterId": task.submitterId, "assigneeId": task.assigneeId,
         "type": task.type, "developmentStatus": task.developmentStatus,
         "validation": task.validation, "description": task.description,
-        "createdAt": task.createdAt if task.createdAt != None else 0, 
+        "createdAt": task.createdAt if task.createdAt != None else 0,
         "updatedAt": task.updatedAt if task.updatedAt != None else 0 }
-        
+      
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(task_json))
     else:
@@ -340,11 +344,10 @@ class TaskHandler(webapp.RequestHandler):
         self.response.set_status(404, "Not Found")
     else:
       self.response.set_status(401, "Not Authorized")
-  
 
 
 class ProjectsHandler(webapp.RequestHandler):
-  # Retrieve a list of all the Users.
+  # Retrieve a list of all the Projects.
   def get(self):
     # collect saved tasks
     projects_json = []
@@ -353,7 +356,7 @@ class ProjectsHandler(webapp.RequestHandler):
         "name": project.name,
         "description": project.description,
         "timeLeft": project.timeLeft,
-        "createdAt": project.createdAt if project.createdAt != None else 0, 
+        "createdAt": project.createdAt if project.createdAt != None else 0,
         "updatedAt": project.updatedAt if project.updatedAt != None else 0 }
       
       projects_json.append(project_json)
@@ -362,34 +365,33 @@ class ProjectsHandler(webapp.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     self.response.out.write(simplejson.dumps(projects_json))
   
-  # Create a new User
+  # Create a new Project
   def post(self):
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
       # collect the data from the record
       project_json = simplejson.loads(self.request.body)
-    
+      
       # create a new project
       project = helpers.apply_json_to_model_instance(Project(), project_json)
       # save project
       project.save()
-    
+      
       guid = project.key().id_or_name()
       new_url = "/tasks-server/project/%s" % guid
       project_json["id"] = guid
-    
+      
       self.response.set_status(201, "Project created")
       self.response.headers['Location'] = new_url
       self.response.headers['Content-Type'] = 'text/json'
       self.response.out.write(simplejson.dumps(project_json))
     else:
       self.response.set_status(401, "Not Authorized")
-  
 
 
 class ProjectHandler(webapp.RequestHandler):
   """Deals with a single project item"""
-    
-  # Retrieve a single project record
+  
+  # Retrieve a single Project
   def get(self, guid):
     """Retrieves a single project record and returns the JSON"""
     key = db.Key.from_path('Project', int(guid))
@@ -399,7 +401,7 @@ class ProjectHandler(webapp.RequestHandler):
       
       project_json = { "id": "%s" % guid, "name": project.timeLeft,
         "description": project.description,
-        "createdAt": project.createdAt if project.createdAt != None else 0, 
+        "createdAt": project.createdAt if project.createdAt != None else 0,
         "updatedAt": project.updatedAt if project.updatedAt != None else 0 }
       
       self.response.headers['Content-Type'] = 'application/json'
@@ -420,7 +422,7 @@ class ProjectHandler(webapp.RequestHandler):
         project = helpers.apply_json_to_model_instance(project, project_json)
         # save the updated data
         project.put()
-      
+        
         # return the same record...
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(project_json))
@@ -444,6 +446,99 @@ class ProjectHandler(webapp.RequestHandler):
     else:
       self.response.set_status(401, "Not Authorized")
 
+
+class WatchesHandler(webapp.RequestHandler):
+  
+  # Retrieve a list of all the Watches.
+  def get(self):
+    # collect saved watches
+    watches_json = []
+    for watch in Watch.all():
+      watch_json = { "id": "%s" % watch.key().id_or_name(),
+        "taskId": watch.taskId,
+        "userId": watch.userId,
+        "createdAt": watch.createdAt if watch.createdAt != None else 0,
+        "updatedAt": watch.updatedAt if watch.updatedAt != None else 0 }
+      
+      watches_json.append(watch_json)
+    
+    # Set the response content type and dump the json
+    self.response.headers['Content-Type'] = 'application/json'
+    self.response.out.write(simplejson.dumps(watches_json))
+  
+  # Create a new Watch
+  def post(self):
+    # collect the data from the record
+    watch_json = simplejson.loads(self.request.body)
+    #logging.info(self.request.body)
+    # create a watch
+    watch = helpers.apply_json_to_model_instance(Watch(), watch_json)
+    # save the new watch
+    watch.put()
+    
+    guid = watch.key().id_or_name()
+    new_url = "/tasks-server/watch/%s" % guid
+    watch_json["id"] = guid
+    
+    self.response.set_status(201, "Watch created")
+    self.response.headers['Location'] = new_url
+    self.response.headers['Content-Type'] = 'text/json'
+    self.response.out.write(simplejson.dumps(watch_json))
+
+
+class WatchHandler(webapp.RequestHandler):
+  # retrieve the watch with a given id
+  def get(self, guid):
+    # find the matching watch
+    key = db.Key.from_path('Watch', int(guid))
+    watch = db.get(key)
+    if not watch == None:
+      guid = "%s" % watch.key().id_or_name()
+      
+      watch_json = { "id": "%s" % guid,
+      "taskId": watch.taskId,
+      "userId": watch.userId,
+      "createdAt": project.createdAt if project.createdAt != None else 0,
+      "updatedAt": project.updatedAt if project.updatedAt != None else 0 }
+      
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(watch_json))
+    
+    else:
+      self.response.set_status(404, "Watch not found [%s]" % guid)
+  
+  # Update an existing record
+  def put(self, guid):
+    # find the matching watch
+    key = db.Key.from_path('Watch', int(guid))
+    watch = db.get(key)
+    if not watch == None:
+      
+      # collect the data from the record
+      watch_json = simplejson.loads(self.request.body)
+      # update the record
+      watch = helpers.apply_json_to_model_instance(watch, watch_json)
+      # save the record
+      watch.put()
+      # return the same record...
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(watch_json))
+    else:
+      self.response.set_status(404, "Watch not found")
+  
+  # delete the watch with a given id
+  def delete(self, guid):
+    # find the matching watch and delete it if found
+    key = db.Key.from_path('Watch', int(guid))
+    watch = db.get(key)
+    if not watch == None:
+      watch.delete()
+      self.response.set_status(204, "Deleted")
+    else:
+      self.response.set_status(404, "Not Found")
+
+
+
 class MailWorker(webapp.RequestHandler):
   """The Mail worker works off the mail queue"""
   def post(self):
@@ -459,15 +554,17 @@ class MailWorker(webapp.RequestHandler):
     projectId = self.request.get('projectId')
     description = self.request.get('description')
     notification.send_notification(self.request.get('taskId'), self.request.get('currentUUID'), action, name, ttype, priority, status, validation, submitterId, assigneeId, effort, projectId, description)
-    
+
 
 def main():
   application = webapp.WSGIApplication([(r'/tasks-server/user?$', UsersHandler),
     (r'/tasks-server/project?$', ProjectsHandler),
     (r'/tasks-server/task?$', TasksHandler),
+    (r'/tasks-server/watch?$', WatchesHandler),
     (r'/tasks-server/user/([^\.]+)?$', UserHandler),
     (r'/tasks-server/project/([^\.]+)?$', ProjectHandler),
     (r'/tasks-server/task/([^\.]+)?$', TaskHandler),
+    (r'/tasks-server/watch/([^\.]+)?$', WatchHandler),
     (r'/mailer', MailWorker)],debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 

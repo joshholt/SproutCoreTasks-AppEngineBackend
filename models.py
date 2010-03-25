@@ -42,3 +42,10 @@ class Task(db.Model):
   validation = db.StringProperty(default="_Untested")
   createdAt = db.IntegerProperty(required=False)
   updatedAt = db.IntegerProperty(required=False)
+
+class Watch(db.Model):
+  """ This is the Watch Model"""
+  taskId = db.IntegerProperty(required=False)
+  userId = db.IntegerProperty(required=False)
+  createdAt = db.IntegerProperty(required=False)
+  updatedAt = db.IntegerProperty(required=False)
