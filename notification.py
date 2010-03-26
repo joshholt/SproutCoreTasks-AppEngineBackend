@@ -45,7 +45,28 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
     task = db.get(task_key)
   currentUser_key = db.Key.from_path('User', int(currentUserId))
   currentUser = db.get(currentUser_key)
-
+  
+  # get all watches for task (like user authentication in main.py)
+  watcherIds = []; watcherEmails = []
+  q = db.GqlQuery("SELECT * FROM Watch WHERE taskId = %s" % taskId)
+  #result = q.fetch()
+  #if len(result) != 0:
+  # for each watch, push userId into array
+  for watch in q:
+    watcherIds.append(watch.userId)
+    
+  # for each watcher, push email (if they have one) into array
+  for watcherId in watcherIds:
+    watcher_key = db.Key.from_path('User', int(watcherId))
+    watcher = db.get(watcher_key)
+    if(watcher.email != None and watcher.email != '' and watcher.email != 'None'):
+      watcherEmails.append(watcher.email)
+      
+  # create list of emails for watchers
+  watcherSendList = ''
+  if(len(watcherEmails) != 0):
+    watcherSendList = '; '.join(watcherEmails)
+    
   if action == "deleted" or task != None:
     submitter = None; assignee = None;
     if action == "deleted" or (task != None and task.submitterId != None):
@@ -140,6 +161,8 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
         oldDescription = newDescription
       message.body += "\nDescription:\n%s\n" % oldDescription if action == "deleted" or newDescription == oldDescription else "\nDescription:\n%s\n\n=>\n\n%s\n" % (oldDescription, newDescription)
 
+    if watcherSendList != '':
+      message.cc += watcherSendList if message.cc == ';' else "; %s" % watcherSendList
     if message.to == ';' and message.cc != ';':
       message.to = message.cc; message.cc = ';'
     if message.to != ';' or message.cc != ';':
