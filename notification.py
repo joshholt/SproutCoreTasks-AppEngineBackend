@@ -22,17 +22,12 @@ def should_notify(currentUserId, task, action, wantsNotifications = True):
   if task.assigneeId != None:
     assigneeKey = db.Key.from_path('User', int(task.assigneeId))
     assignee = db.get(assigneeKey)
-  if wantsNotifications == False:
+  if wantsNotifications == False or task.name == "New Task":
     retVal = False
   elif task.submitterId != None and int(currentUserId) == int(task.submitterId) and task.assigneeId != None and int(currentUserId) == int(task.assigneeId):
     retVal = False
   else:
-    retVal = {
-    # If task
-    "createTask": lambda task: True if task.name != "New Task" else False,
-    "updateTask": lambda task: True,
-    "deleteTask": lambda task: True 
-    }[action](task)
+    retVal = True
     
   return retVal
 
