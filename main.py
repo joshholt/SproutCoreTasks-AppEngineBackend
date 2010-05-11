@@ -355,7 +355,7 @@ class ProjectsHandler(webapp.RequestHandler):
       project_json = { "id": "%s" % project.key().id_or_name(),
         "name": project.name,
         "description": project.description,
-        "timeLeft": project.timeLeft,
+        "timeLeft": project.timeLeft, "developmentStatus": project.developmentStatus,
         "createdAt": project.createdAt if project.createdAt != None else 0,
         "updatedAt": project.updatedAt if project.updatedAt != None else 0 }
       
@@ -400,7 +400,7 @@ class ProjectHandler(webapp.RequestHandler):
       guid = "%s" % project.key().id_or_name()
       
       project_json = { "id": "%s" % guid, "name": project.timeLeft,
-        "description": project.description,
+        "description": project.description, "developmentStatus": project.developmentStatus,
         "createdAt": project.createdAt if project.createdAt != None else 0,
         "updatedAt": project.updatedAt if project.updatedAt != None else 0 }
       
