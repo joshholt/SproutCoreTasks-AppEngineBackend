@@ -25,6 +25,7 @@ class Project(db.Model):
   description = db.TextProperty(required=False)
   timeLeft = db.StringProperty(required=False)
   developmentStatus = db.StringProperty(default="_Planned")
+  activatedAt = db.IntegerProperty(required=False)
   createdAt = db.IntegerProperty(required=False)
   updatedAt = db.IntegerProperty(required=False)
 

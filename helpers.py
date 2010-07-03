@@ -28,8 +28,8 @@ def build_list_json(list):
       "loginName": user.loginName, "role": user.role,
       "preferences": {}, "email": user.email, "authToken": user.authToken if user.authToken != None else "", 
       "password": "password" if user.password != None and len(user.password) != 0 else "",
-      "createdAt": user.createdAt if user.createdAt != None else 0, 
-      "updatedAt": user.updatedAt if user.updatedAt != None else 0 }
+      "createdAt": user.createdAt, 
+      "updatedAt": user.updatedAt }
   
     users_json.append(user_json)
   return users_json

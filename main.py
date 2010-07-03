@@ -151,8 +151,8 @@ class UserHandler(webapp.RequestHandler):
         "preferences": user.preferences if user.preferences != None else {},
         "authToken": user.authToken if user.authToken != None else '',
         "email": user.email if user.email != '' else '',
-        "createdAt": user.createdAt if user.createdAt != None else 0,
-        "updatedAt": user.updatedAt if user.updatedAt != None else 0 }
+        "createdAt": user.createdAt,
+        "updatedAt": user.updatedAt }
       
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(user_json))
@@ -214,8 +214,8 @@ class TasksHandler(webapp.RequestHandler):
         "effort": task.effort, "submitterId": task.submitterId,
         "assigneeId": task.assigneeId, "type": task.type, "developmentStatus": task.developmentStatus,
         "validation": task.validation, "description": task.description,
-        "createdAt": task.createdAt if task.createdAt != None else 0,
-        "updatedAt": task.updatedAt if task.updatedAt != None else 0 }
+        "createdAt": task.createdAt,
+        "updatedAt": task.updatedAt }
       
       tasks_json.append(task_json)
     
@@ -266,8 +266,8 @@ class TaskHandler(webapp.RequestHandler):
         "submitterId": task.submitterId, "assigneeId": task.assigneeId,
         "type": task.type, "developmentStatus": task.developmentStatus,
         "validation": task.validation, "description": task.description,
-        "createdAt": task.createdAt if task.createdAt != None else 0,
-        "updatedAt": task.updatedAt if task.updatedAt != None else 0 }
+        "createdAt": task.createdAt,
+        "updatedAt": task.updatedAt }
       
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(task_json))
@@ -355,9 +355,11 @@ class ProjectsHandler(webapp.RequestHandler):
       project_json = { "id": "%s" % project.key().id_or_name(),
         "name": project.name,
         "description": project.description,
-        "timeLeft": project.timeLeft, "developmentStatus": project.developmentStatus,
-        "createdAt": project.createdAt if project.createdAt != None else 0,
-        "updatedAt": project.updatedAt if project.updatedAt != None else 0 }
+        "timeLeft": project.timeLeft,
+        "developmentStatus": project.developmentStatus,
+        "activatedAt": project.activatedAt,
+        "createdAt": project.createdAt,
+        "updatedAt": project.updatedAt }
       
       projects_json.append(project_json)
     
@@ -401,8 +403,9 @@ class ProjectHandler(webapp.RequestHandler):
       
       project_json = { "id": "%s" % guid, "name": project.timeLeft,
         "description": project.description, "developmentStatus": project.developmentStatus,
-        "createdAt": project.createdAt if project.createdAt != None else 0,
-        "updatedAt": project.updatedAt if project.updatedAt != None else 0 }
+        "activatedAt": project.activatedAt,
+        "createdAt": project.createdAt,
+        "updatedAt": project.updatedAt }
       
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(project_json))
@@ -457,8 +460,8 @@ class WatchesHandler(webapp.RequestHandler):
       watch_json = { "id": "%s" % watch.key().id_or_name(),
         "taskId": watch.taskId,
         "userId": watch.userId,
-        "createdAt": watch.createdAt if watch.createdAt != None else 0,
-        "updatedAt": watch.updatedAt if watch.updatedAt != None else 0 }
+        "createdAt": watch.createdAt,
+        "updatedAt": watch.updatedAt }
       
       watches_json.append(watch_json)
     
@@ -498,8 +501,8 @@ class WatchHandler(webapp.RequestHandler):
       watch_json = { "id": "%s" % guid,
       "taskId": watch.taskId,
       "userId": watch.userId,
-      "createdAt": project.createdAt if project.createdAt != None else 0,
-      "updatedAt": project.updatedAt if project.updatedAt != None else 0 }
+      "createdAt": watch.createdAt,
+      "updatedAt": watch.updatedAt }
       
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(watch_json))
