@@ -91,7 +91,9 @@ class UsersHandler(webapp.RequestHandler):
           if "'%s'" % result[0].password == password or (len(result[0].password) == 0 and password == "'None'"):
             result[0].authToken = helpers.generateAuthToken()
             result[0].put()
-            users_json = helpers.build_list_json(User.all())
+            loginUser = []
+            loginUser.append(result[0])
+            users_json = helpers.build_list_json(loginUser)
           else:
             users_json = []
       else:
