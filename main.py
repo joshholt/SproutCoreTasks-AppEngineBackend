@@ -66,12 +66,32 @@ from models import Watch
 # Helper Imports
 import helpers,notification
 
+class RecordsHandler(webapp.RequestHandler):
+  
+  # Retrieve a list of all the Records.
+  def get(self):
+    users_json = helpers.build_user_list_json(User.all())
+    tasks_json = helpers.build_task_list_json(Task.all())
+    projects_json = helpers.build_project_list_json(Project.all())
+    watches_json = helpers.build_watch_list_json(Watch.all())
+    
+    records_json = {
+     "CoreTasks.User": users_json,
+     "CoreTasks.Task": tasks_json,
+     "CoreTasks.Project": projects_json,
+     "CoreTasks.Watch": watches_json
+    }
+    
+    # Set the response content type and dump the json
+    self.response.headers['Content-Type'] = 'application/json'
+    self.response.out.write(simplejson.dumps(records_json))
+
 class UsersHandler(webapp.RequestHandler):
   
   # Retrieve a list of all the Users.
   def get(self):
     if  len(self.request.params) == 0:
-      users_json = helpers.build_list_json(User.all())
+      users_json = helpers.build_user_list_json(User.all())
       # Set the response content type and dump the json
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(users_json))
@@ -93,7 +113,7 @@ class UsersHandler(webapp.RequestHandler):
             result[0].put()
             loginUser = []
             loginUser.append(result[0])
-            users_json = helpers.build_list_json(loginUser)
+            users_json = helpers.build_user_list_json(loginUser)
           else:
             users_json = []
       else:
@@ -208,18 +228,7 @@ class TasksHandler(webapp.RequestHandler):
   # Retrieve a list of all the Tasks.
   def get(self):
     # collect saved tasks
-    tasks_json = []
-    for task in Task.all():
-      task_json = { "id": "%s" % task.key().id_or_name(),
-        "name": task.name, "priority": task.priority,
-        "projectId": task.projectId,
-        "effort": task.effort, "submitterId": task.submitterId,
-        "assigneeId": task.assigneeId, "type": task.type, "developmentStatus": task.developmentStatus,
-        "validation": task.validation, "description": task.description,
-        "createdAt": task.createdAt,
-        "updatedAt": task.updatedAt }
-      
-      tasks_json.append(task_json)
+    tasks_json = helpers.build_task_list_json(Task.all())
     
     # Set the response content type and dump the json
     self.response.headers['Content-Type'] = 'application/json'
@@ -352,18 +361,7 @@ class ProjectsHandler(webapp.RequestHandler):
   # Retrieve a list of all the Projects.
   def get(self):
     # collect saved tasks
-    projects_json = []
-    for project in Project.all():
-      project_json = { "id": "%s" % project.key().id_or_name(),
-        "name": project.name,
-        "description": project.description,
-        "timeLeft": project.timeLeft,
-        "developmentStatus": project.developmentStatus,
-        "activatedAt": project.activatedAt,
-        "createdAt": project.createdAt,
-        "updatedAt": project.updatedAt }
-      
-      projects_json.append(project_json)
+    projects_json = helpers.build_project_list_json(Project.all())
     
     # Set the response content type and dump the json
     self.response.headers['Content-Type'] = 'application/json'
@@ -457,15 +455,7 @@ class WatchesHandler(webapp.RequestHandler):
   # Retrieve a list of all the Watches.
   def get(self):
     # collect saved watches
-    watches_json = []
-    for watch in Watch.all():
-      watch_json = { "id": "%s" % watch.key().id_or_name(),
-        "taskId": watch.taskId,
-        "userId": watch.userId,
-        "createdAt": watch.createdAt,
-        "updatedAt": watch.updatedAt }
-      
-      watches_json.append(watch_json)
+    watches_json = helpers.build_watch_list_json(Watch.all())
     
     # Set the response content type and dump the json
     self.response.headers['Content-Type'] = 'application/json'
@@ -562,7 +552,9 @@ class MailWorker(webapp.RequestHandler):
 
 
 def main():
-  application = webapp.WSGIApplication([(r'/tasks-server/user?$', UsersHandler),
+  application = webapp.WSGIApplication([
+    (r'/tasks-server/records?$', RecordsHandler),
+    (r'/tasks-server/user?$', UsersHandler),
     (r'/tasks-server/project?$', ProjectsHandler),
     (r'/tasks-server/task?$', TasksHandler),
     (r'/tasks-server/watch?$', WatchesHandler),

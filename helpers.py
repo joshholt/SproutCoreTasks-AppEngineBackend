@@ -19,8 +19,7 @@ def apply_json_to_model_instance(model, jobj):
   return model  
 
 
-def build_list_json(list):
-  """This method will build the users list in JSON"""
+def build_user_list_json(list):
   users_json = []
   for user in list:
     user_json = { "id": "%s" % user.key().id_or_name(),
@@ -33,6 +32,48 @@ def build_list_json(list):
   
     users_json.append(user_json)
   return users_json
+
+def build_task_list_json(list):
+  tasks_json = []
+  for task in list:
+    task_json = { "id": "%s" % task.key().id_or_name(),
+      "name": task.name, "priority": task.priority,
+      "projectId": task.projectId,
+      "effort": task.effort, "submitterId": task.submitterId,
+      "assigneeId": task.assigneeId, "type": task.type, "developmentStatus": task.developmentStatus,
+      "validation": task.validation, "description": task.description,
+      "createdAt": task.createdAt,
+      "updatedAt": task.updatedAt }
+    
+    tasks_json.append(task_json)
+  return tasks_json
+
+def build_project_list_json(list):
+  projects_json = []
+  for project in list:
+    project_json = { "id": "%s" % project.key().id_or_name(),
+      "name": project.name,
+      "description": project.description,
+      "timeLeft": project.timeLeft,
+      "developmentStatus": project.developmentStatus,
+      "activatedAt": project.activatedAt,
+      "createdAt": project.createdAt,
+      "updatedAt": project.updatedAt }
+    
+    projects_json.append(project_json)
+  return projects_json
+
+def build_watch_list_json(list):
+  watches_json = []
+  for watch in list:
+    watch_json = { "id": "%s" % watch.key().id_or_name(),
+      "taskId": watch.taskId,
+      "userId": watch.userId,
+      "createdAt": watch.createdAt,
+      "updatedAt": watch.updatedAt }
+    
+    watches_json.append(watch_json)
+  return watches_json
 
 def generateAuthToken():
   """This method generates the authToken for a user every time they login"""
