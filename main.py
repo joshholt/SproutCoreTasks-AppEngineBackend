@@ -76,10 +76,10 @@ class RecordsHandler(webapp.RequestHandler):
     watches_json = helpers.build_watch_list_json(Watch.all())
     
     records_json = {
-     "CoreTasks.User": users_json,
-     "CoreTasks.Task": tasks_json,
-     "CoreTasks.Project": projects_json,
-     "CoreTasks.Watch": watches_json
+     "user": users_json,
+     "task": tasks_json,
+     "project": projects_json,
+     "watch": watches_json
     }
     
     # Set the response content type and dump the json

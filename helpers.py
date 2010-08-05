@@ -14,10 +14,12 @@ from models import User, Task, Project
 def apply_json_to_model_instance(model, jobj):
   """This is the generic method to apply the given json to the given model"""
   for key in model.properties():
-    setattr(model, key, jobj[key] if jobj.has_key(key) else None)
+    if key == 'submitterId' or key == 'assigneeId': # HACK: [JH2] mapping types because they keep changing
+      setattr(model, key, int(jobj[key]) if jobj.has_key(key) else None)
+    else:
+      setattr(model, key, jobj[key] if jobj.has_key(key) else None)
   
   return model  
-
 
 def build_user_list_json(list):
   users_json = []
