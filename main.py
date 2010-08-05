@@ -84,7 +84,7 @@ class RecordsHandler(webapp.RequestHandler):
     
     # Set the response content type and dump the json
     self.response.headers['Content-Type'] = 'application/json'
-    self.response.out.write(simplejson.dumps(records_json))
+    self.response.out.write('[' + simplejson.dumps(records_json) + ']')
 
 class UsersHandler(webapp.RequestHandler):
   
