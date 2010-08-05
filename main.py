@@ -75,7 +75,7 @@ class RecordsHandler(webapp.RequestHandler):
     projects_json = helpers.build_project_list_json(Project.all())
     watches_json = helpers.build_watch_list_json(Watch.all())
     
-    results = {
+    result = {
      "users": users_json,
      "tasks": tasks_json,
      "projects": projects_json,
@@ -83,7 +83,7 @@ class RecordsHandler(webapp.RequestHandler):
     }
     
     records_json = {
-      "results": results
+      "result": result
     }
     
     # Set the response content type and dump the json
