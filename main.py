@@ -75,16 +75,20 @@ class RecordsHandler(webapp.RequestHandler):
     projects_json = helpers.build_project_list_json(Project.all())
     watches_json = helpers.build_watch_list_json(Watch.all())
     
+    results = {
+     "users": users_json,
+     "tasks": tasks_json,
+     "projects": projects_json,
+     "watches": watches_json
+    }
+    
     records_json = {
-     "user": users_json,
-     "task": tasks_json,
-     "project": projects_json,
-     "watch": watches_json
+      "results": results
     }
     
     # Set the response content type and dump the json
     self.response.headers['Content-Type'] = 'application/json'
-    self.response.out.write('[' + simplejson.dumps(records_json) + ']')
+    self.response.out.write(simplejson.dumps(records_json))
 
 class UsersHandler(webapp.RequestHandler):
   
