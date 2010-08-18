@@ -537,6 +537,24 @@ class WatchHandler(webapp.RequestHandler):
       self.response.set_status(404, "Not Found")
 
 
+class LogoutHandler(webapp.RequestHandler):
+  """Logs off a user"""
+  def post(self):
+    userId = self.request.get('id')
+    # find the matching user
+    key = db.Key.from_path('User', int(userId))
+    user = db.get(key)
+    if not user == None:
+      # clear out authentication token
+      user.authToken = None
+      # save the record
+      user.put()
+      self.response.set_status(200, "User logged out")
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps({ "message": 'Logout successful'}))
+    else:
+      self.response.set_status(404, "User not found")    
+
 
 class MailWorker(webapp.RequestHandler):
   """The Mail worker works off the mail queue"""
@@ -566,6 +584,7 @@ def main():
     (r'/tasks-server/project/([^\.]+)?$', ProjectHandler),
     (r'/tasks-server/task/([^\.]+)?$', TaskHandler),
     (r'/tasks-server/watch/([^\.]+)?$', WatchHandler),
+    (r'/tasks-server/logout', LogoutHandler),
     (r'/mailer', MailWorker)],debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 

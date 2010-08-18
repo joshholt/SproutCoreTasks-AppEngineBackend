@@ -36,5 +36,8 @@ handlers:
 - url: /tasks
   static_dir: static/tasks
 
+- url: /logout
+  script: main.python
+
 - url: /.*
   script: main.py
