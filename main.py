@@ -144,7 +144,7 @@ class UsersHandler(webapp.RequestHandler):
         
         self.response.set_status(201, "User created")
         self.response.headers['Location'] = new_url
-        self.response.headers['Content-Type'] = 'text/json'
+        self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(user_json))
       else:
         self.response.set_status(401, "Not Authorized")
@@ -158,7 +158,7 @@ class UsersHandler(webapp.RequestHandler):
       user_json["id"] = guid
       self.response.set_status(201, "User created")
       self.response.headers['Location'] = new_url
-      self.response.headers['Content-Type'] = 'text/json'
+      self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(user_json))
 
 
@@ -261,7 +261,7 @@ class TasksHandler(webapp.RequestHandler):
       task_json["id"] = guid
       self.response.set_status(201, "Task created")
       self.response.headers['Location'] = new_url
-      self.response.headers['Content-Type'] = 'text/json'
+      self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(task_json))
     else:
       self.response.set_status(401, "Not Authorized")
@@ -388,7 +388,7 @@ class ProjectsHandler(webapp.RequestHandler):
       
       self.response.set_status(201, "Project created")
       self.response.headers['Location'] = new_url
-      self.response.headers['Content-Type'] = 'text/json'
+      self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(project_json))
     else:
       self.response.set_status(401, "Not Authorized")
@@ -481,7 +481,7 @@ class WatchesHandler(webapp.RequestHandler):
     
     self.response.set_status(201, "Watch created")
     self.response.headers['Location'] = new_url
-    self.response.headers['Content-Type'] = 'text/json'
+    self.response.headers['Content-Type'] = 'application/json'
     self.response.out.write(simplejson.dumps(watch_json))
 
 

@@ -14,10 +14,7 @@ from models import User, Task, Project
 def apply_json_to_model_instance(model, jobj):
   """This is the generic method to apply the given json to the given model"""
   for key in model.properties():
-    if key == 'submitterId' or key == 'assigneeId' or key == 'taskId' or key == 'userId': # HACK: [JH2] mapping types because they keep changing
-      setattr(model, key, int(jobj[key]) if jobj.has_key(key) else None)
-    else:
-      setattr(model, key, jobj[key] if jobj.has_key(key) else None)
+    setattr(model, key, jobj[key] if jobj.has_key(key) else None)
   
   return model  
 
