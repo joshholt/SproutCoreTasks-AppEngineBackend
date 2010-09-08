@@ -48,6 +48,7 @@
 
 # App Engine Imports
 import logging
+import sys
 import os
 import datetime
 import wsgiref.handlers
@@ -70,10 +71,33 @@ class RecordsHandler(webapp.RequestHandler):
   
   # Retrieve a list of all the Records.
   def get(self):
-    users_json = helpers.build_user_list_json(User.all())
-    tasks_json = helpers.build_task_list_json(Task.all())
-    projects_json = helpers.build_project_list_json(Project.all())
-    watches_json = helpers.build_watch_list_json(Watch.all())
+    lastRetrievedAt = ''
+    if len(self.request.params) > 0:
+      lastRetrievedAt = self.request.params['lastRetrievedAt']
+    
+    if lastRetrievedAt == '':
+      users_json = helpers.build_user_list_json(User.all())
+      tasks_json = helpers.build_task_list_json(Task.all())
+      projects_json = helpers.build_project_list_json(Project.all())
+      watches_json = helpers.build_watch_list_json(Watch.all())
+    else:
+      max_results = 10000000
+      q = User.all()
+      q.filter('updatedAt >', int(lastRetrievedAt))
+      result = q.fetch(max_results)
+      users_json = helpers.build_user_list_json(result)
+      q = Task.all()
+      q.filter('updatedAt >', int(lastRetrievedAt))
+      result = q.fetch(max_results)
+      tasks_json = helpers.build_task_list_json(result)
+      q = Project.all()
+      q.filter('updatedAt >', int(lastRetrievedAt))
+      result = q.fetch(max_results)
+      projects_json = helpers.build_project_list_json(result)
+      q = Watch.all()
+      q.filter('updatedAt >', int(lastRetrievedAt))
+      result = q.fetch(max_results)
+      watches_json = helpers.build_watch_list_json(result)
     
     result = {
      "users": users_json,

@@ -17,6 +17,7 @@ class User(db.Model):
   authToken = db.StringProperty(required=False)
   createdAt = db.IntegerProperty(required=False)
   updatedAt = db.IntegerProperty(required=False)
+  status = db.StringProperty(required=False)
 
 
 class Project(db.Model):
@@ -28,6 +29,7 @@ class Project(db.Model):
   activatedAt = db.IntegerProperty(required=False)
   createdAt = db.IntegerProperty(required=False)
   updatedAt = db.IntegerProperty(required=False)
+  status = db.StringProperty(required=False)
 
 
 class Task(db.Model):
@@ -44,6 +46,8 @@ class Task(db.Model):
   validation = db.StringProperty(default="_Untested")
   createdAt = db.IntegerProperty(required=False)
   updatedAt = db.IntegerProperty(required=False)
+  status = db.StringProperty(required=False)
+
 
 class Watch(db.Model):
   """ This is the Watch Model"""
@@ -51,3 +55,4 @@ class Watch(db.Model):
   userId = db.IntegerProperty(required=False)
   createdAt = db.IntegerProperty(required=False)
   updatedAt = db.IntegerProperty(required=False)
+  status = db.StringProperty(required=False)

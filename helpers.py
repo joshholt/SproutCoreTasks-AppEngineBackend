@@ -26,6 +26,7 @@ def build_user_list_json(list):
       "loginName": user.loginName, "role": user.role,
       "preferences": {}, "email": user.email, "authToken": user.authToken if user.authToken != None else "", 
       "password": "password" if user.password != None and len(user.password) != 0 else "",
+      "status": user.status, 
       "createdAt": user.createdAt, 
       "updatedAt": user.updatedAt }
   
@@ -41,6 +42,7 @@ def build_task_list_json(list):
       "effort": task.effort, "submitterId": task.submitterId,
       "assigneeId": task.assigneeId, "type": task.type, "developmentStatus": task.developmentStatus,
       "validation": task.validation, "description": task.description,
+      "status": task.status, 
       "createdAt": task.createdAt,
       "updatedAt": task.updatedAt }
     
@@ -56,6 +58,7 @@ def build_project_list_json(list):
       "timeLeft": project.timeLeft,
       "developmentStatus": project.developmentStatus,
       "activatedAt": project.activatedAt,
+      "status": project.status, 
       "createdAt": project.createdAt,
       "updatedAt": project.updatedAt }
     
@@ -68,6 +71,7 @@ def build_watch_list_json(list):
     watch_json = { "id": "%s" % watch.key().id_or_name(),
       "taskId": watch.taskId,
       "userId": watch.userId,
+      "status": watch.status, 
       "createdAt": watch.createdAt,
       "updatedAt": watch.updatedAt }
     
