@@ -71,48 +71,52 @@ class RecordsHandler(webapp.RequestHandler):
   
   # Retrieve a list of all the Records.
   def get(self):
-    lastRetrievedAt = ''
-    if len(self.request.params) > 0:
-      lastRetrievedAt = self.request.params['lastRetrievedAt']
     
-    if lastRetrievedAt == '':
-      users_json = helpers.build_user_list_json(User.all())
-      tasks_json = helpers.build_task_list_json(Task.all())
-      projects_json = helpers.build_project_list_json(Project.all())
-      watches_json = helpers.build_watch_list_json(Watch.all())
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      lastRetrievedAt = ''
+      if len(self.request.params) > 0:
+        lastRetrievedAt = self.request.params['lastRetrievedAt']
+    
+      if lastRetrievedAt == '':
+        users_json = helpers.build_user_list_json(User.all())
+        tasks_json = helpers.build_task_list_json(Task.all())
+        projects_json = helpers.build_project_list_json(Project.all())
+        watches_json = helpers.build_watch_list_json(Watch.all())
+      else:
+        max_results = 10000000
+        q = User.all()
+        q.filter('updatedAt >', int(lastRetrievedAt))
+        result = q.fetch(max_results)
+        users_json = helpers.build_user_list_json(result)
+        q = Task.all()
+        q.filter('updatedAt >', int(lastRetrievedAt))
+        result = q.fetch(max_results)
+        tasks_json = helpers.build_task_list_json(result)
+        q = Project.all()
+        q.filter('updatedAt >', int(lastRetrievedAt))
+        result = q.fetch(max_results)
+        projects_json = helpers.build_project_list_json(result)
+        q = Watch.all()
+        q.filter('updatedAt >', int(lastRetrievedAt))
+        result = q.fetch(max_results)
+        watches_json = helpers.build_watch_list_json(result)
+    
+      result = {
+       "users": users_json,
+       "tasks": tasks_json,
+       "projects": projects_json,
+       "watches": watches_json
+      }
+    
+      records_json = {
+        "result": result
+      }
+    
+      # Set the response content type and dump the json
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(records_json))
     else:
-      max_results = 10000000
-      q = User.all()
-      q.filter('updatedAt >', int(lastRetrievedAt))
-      result = q.fetch(max_results)
-      users_json = helpers.build_user_list_json(result)
-      q = Task.all()
-      q.filter('updatedAt >', int(lastRetrievedAt))
-      result = q.fetch(max_results)
-      tasks_json = helpers.build_task_list_json(result)
-      q = Project.all()
-      q.filter('updatedAt >', int(lastRetrievedAt))
-      result = q.fetch(max_results)
-      projects_json = helpers.build_project_list_json(result)
-      q = Watch.all()
-      q.filter('updatedAt >', int(lastRetrievedAt))
-      result = q.fetch(max_results)
-      watches_json = helpers.build_watch_list_json(result)
-    
-    result = {
-     "users": users_json,
-     "tasks": tasks_json,
-     "projects": projects_json,
-     "watches": watches_json
-    }
-    
-    records_json = {
-      "result": result
-    }
-    
-    # Set the response content type and dump the json
-    self.response.headers['Content-Type'] = 'application/json'
-    self.response.out.write(simplejson.dumps(records_json))
+      self.response.set_status(401, "Not Authorized")
 
 class UsersHandler(webapp.RequestHandler):
   
