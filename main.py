@@ -51,6 +51,7 @@ import logging
 import sys
 import os
 import datetime
+import time
 import wsgiref.handlers
 from google.appengine.ext import webapp
 from google.appengine.ext import db
@@ -66,6 +67,9 @@ from models import Watch
 
 # Helper Imports
 import helpers,notification
+
+max_results = 10000000
+month_milliseconds = 30*24*60*60*1000
 
 class RecordsHandler(webapp.RequestHandler):
   
@@ -83,7 +87,6 @@ class RecordsHandler(webapp.RequestHandler):
         projects_json = helpers.build_project_list_json(Project.all())
         watches_json = helpers.build_watch_list_json(Watch.all())
       else:
-        max_results = 10000000
         q = User.all()
         q.filter('updatedAt >', int(lastRetrievedAt))
         result = q.fetch(max_results)
@@ -130,22 +133,18 @@ class UsersHandler(webapp.RequestHandler):
     else:
       users_json = []
       if len(self.request.params) == 2:
-        user = self.request.params['loginName']
-        password = self.request.params['password']
-        q = db.GqlQuery("SELECT * FROM User WHERE loginName = %s" % user)
-        result = q.fetch(2)
+        loginName = self.request.params['loginName'].strip().replace("\'","")
+        password = self.request.params['password'].strip().replace("\'","")
+        q = User.all()
+        q.filter('loginName =', loginName)
+        result = q.fetch(1)
         if len(result) == 0:
           users_json = []
         else:
-          # This is really crappy, it works for now, but I'm not proud of it...
-          if len(password.strip().replace("\'","")) == 0 or password == None:
-            password = "'None'"
-          if "'%s'" % result[0].password == password or (len(result[0].password) == 0 and password == "'None'"):
+          if result[0].password == None or result[0].password == password:
             result[0].authToken = helpers.generateAuthToken()
             result[0].put()
-            loginUser = []
-            loginUser.append(result[0])
-            users_json = helpers.build_user_list_json(loginUser)
+            users_json = helpers.build_user_list_json([ result[0] ])
           else:
             users_json = []
       else:
@@ -565,6 +564,56 @@ class WatchHandler(webapp.RequestHandler):
       self.response.set_status(404, "Not Found")
 
 
+class CleanupHandler(webapp.RequestHandler):
+  """Deletes soft-deleted records more than a month old"""
+  def post(self):
+    month_ago = int(time.time()*1000) - month_milliseconds
+    
+    q = User.all()
+    q.filter("status =", "deleted")
+    q.filter("updatedAt <", month_ago)
+    users_to_delete = q.fetch(max_results)
+    db.delete(users_to_delete)
+    users_json = helpers.build_user_list_json(users_to_delete)
+    
+    q = Project.all()
+    q.filter("status =", "deleted")
+    q.filter("updatedAt <", month_ago)
+    projects_to_delete = q.fetch(max_results)
+    db.delete(projects_to_delete)
+    projects_json = helpers.build_project_list_json(projects_to_delete)
+    
+    q = Task.all()
+    q.filter("status =", "deleted")
+    q.filter("updatedAt <", month_ago)
+    tasks_to_delete = q.fetch(max_results)
+    db.delete(tasks_to_delete)
+    tasks_json = helpers.build_task_list_json(tasks_to_delete)
+    
+    q = Watch.all()
+    q.filter("status =", "deleted")
+    q.filter("updatedAt <", month_ago)
+    watches_to_delete = q.fetch(max_results)
+    db.delete(watches_to_delete)
+    watches_json = helpers.build_watch_list_json(watches_to_delete)
+    
+    result = {
+     "users": users_json,
+     "tasks": tasks_json,
+     "projects": projects_json,
+     "watches": watches_json
+    }
+  
+    records_json = {
+      "result": result
+    }
+  
+    # Set the response content type and dump the json
+    self.response.set_status(200, "Data Cleaned Out")
+    self.response.headers['Content-Type'] = 'application/json'
+    self.response.out.write(simplejson.dumps(records_json))
+    
+
 class LogoutHandler(webapp.RequestHandler):
   """Logs off a user"""
   def post(self):
@@ -612,6 +661,7 @@ def main():
     (r'/tasks-server/project/([^\.]+)?$', ProjectHandler),
     (r'/tasks-server/task/([^\.]+)?$', TaskHandler),
     (r'/tasks-server/watch/([^\.]+)?$', WatchHandler),
+    (r'/tasks-server/cleanup', CleanupHandler),
     (r'/tasks-server/logout', LogoutHandler),
     (r'/mailer', MailWorker)],debug=True)
   wsgiref.handlers.CGIHandler().run(application)
