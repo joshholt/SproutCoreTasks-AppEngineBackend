@@ -564,44 +564,52 @@ class WatchHandler(webapp.RequestHandler):
       self.response.set_status(404, "Not Found")
 
 
+# Example command line invocations:
+# curl -X POST http://localhost:4400/tasks-server/cleanup -d "cutoff="
+# curl -X POST http://localhost:4400/tasks-server/cleanup -d "cutoff=1282279058109"
 class CleanupHandler(webapp.RequestHandler):
   """Deletes soft-deleted records more than a month old"""
   def post(self):
-    month_ago = int(time.time()*1000) - month_milliseconds
+    cutoff = self.request.params['cutoff']
+    if cutoff == '':
+      cutoff = int(time.time()*1000) - month_milliseconds
+    else:
+      cutoff = int(cutoff)
     
     q = User.all()
     q.filter("status =", "deleted")
-    q.filter("updatedAt <", month_ago)
+    q.filter("updatedAt <", cutoff)
     users_to_delete = q.fetch(max_results)
     db.delete(users_to_delete)
     users_json = helpers.build_user_list_json(users_to_delete)
     
     q = Project.all()
     q.filter("status =", "deleted")
-    q.filter("updatedAt <", month_ago)
+    q.filter("updatedAt <", cutoff)
     projects_to_delete = q.fetch(max_results)
     db.delete(projects_to_delete)
     projects_json = helpers.build_project_list_json(projects_to_delete)
     
     q = Task.all()
     q.filter("status =", "deleted")
-    q.filter("updatedAt <", month_ago)
+    q.filter("updatedAt <", cutoff)
     tasks_to_delete = q.fetch(max_results)
     db.delete(tasks_to_delete)
     tasks_json = helpers.build_task_list_json(tasks_to_delete)
     
     q = Watch.all()
     q.filter("status =", "deleted")
-    q.filter("updatedAt <", month_ago)
+    q.filter("updatedAt <", cutoff)
     watches_to_delete = q.fetch(max_results)
     db.delete(watches_to_delete)
     watches_json = helpers.build_watch_list_json(watches_to_delete)
     
     result = {
-     "users": users_json,
-     "tasks": tasks_json,
-     "projects": projects_json,
-     "watches": watches_json
+    "cutoff": cutoff,
+     "usersDeleted": users_json,
+     "projectsDeleted": projects_json,
+     "tasksDeleted": tasks_json,
+     "watchesDeleted": watches_json
     }
   
     records_json = {
