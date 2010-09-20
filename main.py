@@ -178,36 +178,12 @@ class UsersHandler(webapp.RequestHandler):
 
 
 class UserHandler(webapp.RequestHandler):
-  # retrieve the user with a given id
-  def get(self, guid):
-    # find the matching user
-    key = db.Key.from_path('User', int(guid))
-    user = db.get(key)
-    if not user == None:
-      guid = "%s" % user.key().id_or_name()
-      
-      user_json = { "id": "%s" % guid,
-        "name": user.name,
-        "loginName": user.loginName, "role": user.role,
-        "preferences": user.preferences if user.preferences != None else {},
-        "authToken": user.authToken if user.authToken != None else '',
-        "email": user.email if user.email != '' else '',
-        "createdAt": user.createdAt,
-        "updatedAt": user.updatedAt }
-      
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(user_json))
-    
-    else:
-      self.response.set_status(404, "User not found [%s]" % guid)
-  
   # Update an existing record
   def put(self, guid):
     # find the matching user
     key = db.Key.from_path('User', int(guid))
     user = db.get(key)
     if not user == None:
-      
       # collect the data from the record
       user_json = simplejson.loads(self.request.body)
       # The following keeps Guests and Developers and Testers from being able
@@ -244,15 +220,6 @@ class UserHandler(webapp.RequestHandler):
 
 
 class TasksHandler(webapp.RequestHandler):
-  # Retrieve a list of all the Tasks.
-  def get(self):
-    # collect saved tasks
-    tasks_json = helpers.build_task_list_json(Task.all())
-    
-    # Set the response content type and dump the json
-    self.response.headers['Content-Type'] = 'application/json'
-    self.response.out.write(simplejson.dumps(tasks_json))
-  
   # Create a new Task
   def post(self):
     wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
@@ -283,27 +250,6 @@ class TasksHandler(webapp.RequestHandler):
 
 
 class TaskHandler(webapp.RequestHandler):
-  """Deals with a single Task item"""
-  def get(self, guid):
-    """Retrieves a single task record and returns the JSON"""
-    key = db.Key.from_path('Task', int(guid))
-    task = db.get(key)
-    if not task == None:
-      guid = "%s" % task.key().id_or_name()
-      task_json = { "id": "%s" % guid, "name": task.name,
-        "priority": task.priority, "effort": task.effort,
-        "projectId": task.projectId,
-        "submitterId": task.submitterId, "assigneeId": task.assigneeId,
-        "type": task.type, "developmentStatus": task.developmentStatus,
-        "validation": task.validation, "description": task.description,
-        "createdAt": task.createdAt,
-        "updatedAt": task.updatedAt }
-      
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(task_json))
-    else:
-      self.response.set_status(404, "Task not found")
-  
   def put(self, guid):
     """Update the task with the given id"""
     key = db.Key.from_path('Task', int(guid))
@@ -377,15 +323,6 @@ class TaskHandler(webapp.RequestHandler):
 
 
 class ProjectsHandler(webapp.RequestHandler):
-  # Retrieve a list of all the Projects.
-  def get(self):
-    # collect saved tasks
-    projects_json = helpers.build_project_list_json(Project.all())
-    
-    # Set the response content type and dump the json
-    self.response.headers['Content-Type'] = 'application/json'
-    self.response.out.write(simplejson.dumps(projects_json))
-  
   # Create a new Project
   def post(self):
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
@@ -410,28 +347,6 @@ class ProjectsHandler(webapp.RequestHandler):
 
 
 class ProjectHandler(webapp.RequestHandler):
-  """Deals with a single project item"""
-  
-  # Retrieve a single Project
-  def get(self, guid):
-    """Retrieves a single project record and returns the JSON"""
-    key = db.Key.from_path('Project', int(guid))
-    project = db.get(key)
-    if not project == None:
-      guid = "%s" % project.key().id_or_name()
-      
-      project_json = { "id": "%s" % guid, "name": project.timeLeft,
-        "description": project.description, "developmentStatus": project.developmentStatus,
-        "activatedAt": project.activatedAt,
-        "createdAt": project.createdAt,
-        "updatedAt": project.updatedAt }
-      
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(project_json))
-    
-    else:
-      self.response.set_status(404, "Project not found")
-  
   def put(self, guid):
     """Update the project with the given id"""
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
@@ -470,16 +385,6 @@ class ProjectHandler(webapp.RequestHandler):
 
 
 class WatchesHandler(webapp.RequestHandler):
-  
-  # Retrieve a list of all the Watches.
-  def get(self):
-    # collect saved watches
-    watches_json = helpers.build_watch_list_json(Watch.all())
-    
-    # Set the response content type and dump the json
-    self.response.headers['Content-Type'] = 'application/json'
-    self.response.out.write(simplejson.dumps(watches_json))
-  
   # Create a new Watch
   def post(self):
     # collect the data from the record
@@ -501,26 +406,6 @@ class WatchesHandler(webapp.RequestHandler):
 
 
 class WatchHandler(webapp.RequestHandler):
-  # retrieve the watch with a given id
-  def get(self, guid):
-    # find the matching watch
-    key = db.Key.from_path('Watch', int(guid))
-    watch = db.get(key)
-    if not watch == None:
-      guid = "%s" % watch.key().id_or_name()
-      
-      watch_json = { "id": "%s" % guid,
-      "taskId": watch.taskId,
-      "userId": watch.userId,
-      "createdAt": watch.createdAt,
-      "updatedAt": watch.updatedAt }
-      
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(watch_json))
-    
-    else:
-      self.response.set_status(404, "Watch not found [%s]" % guid)
-  
   # Update an existing record
   def put(self, guid):
     # find the matching watch
