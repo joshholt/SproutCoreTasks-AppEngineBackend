@@ -565,12 +565,15 @@ class WatchHandler(webapp.RequestHandler):
 
 
 # Example command line invocations:
-# curl -X POST http://localhost:4400/tasks-server/cleanup -d "cutoff="
+# curl -X POST http://localhost:4400/tasks-server/cleanup -d ""
 # curl -X POST http://localhost:4400/tasks-server/cleanup -d "cutoff=1282279058109"
 class CleanupHandler(webapp.RequestHandler):
   """Deletes soft-deleted records more than a month old"""
   def post(self):
-    cutoff = self.request.params['cutoff']
+    cutoff = ''
+    
+    if len(self.request.params) > 0:
+      cutoff = self.request.params['cutoff']
     if cutoff == '':
       cutoff = int(time.time()*1000) - month_milliseconds
     else:
@@ -605,7 +608,7 @@ class CleanupHandler(webapp.RequestHandler):
     watches_json = helpers.build_watch_list_json(watches_to_delete)
     
     result = {
-    "cutoff": cutoff,
+     "cutoff": cutoff,
      "usersDeleted": users_json,
      "projectsDeleted": projects_json,
      "tasksDeleted": tasks_json,
