@@ -123,32 +123,20 @@ class RecordsHandler(webapp.RequestHandler):
 
 class UsersHandler(webapp.RequestHandler):
   
-  # Retrieve a list of all the Users.
+  # Login a user given loginName and password.
   def get(self):
-    if  len(self.request.params) == 0:
-      users_json = helpers.build_user_list_json(User.all())
-      # Set the response content type and dump the json
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(users_json))
-    else:
-      users_json = []
-      if len(self.request.params) == 2:
-        loginName = self.request.params['loginName'].strip().replace("\'","")
-        password = self.request.params['password'].strip().replace("\'","")
-        q = User.all()
-        q.filter('loginName =', loginName)
-        result = q.fetch(1)
-        if len(result) == 0:
-          users_json = []
-        else:
-          if result[0].password == None or result[0].password == password:
-            result[0].authToken = helpers.generateAuthToken()
-            result[0].put()
-            users_json = helpers.build_user_list_json([ result[0] ])
-          else:
-            users_json = []
-      else:
-        users_json = []
+    users_json = []
+    if len(self.request.params) == 2:
+      loginName = self.request.params['loginName'].strip().replace("\'","")
+      password = self.request.params['password'].strip().replace("\'","")
+      q = User.all()
+      q.filter('loginName =', loginName)
+      result = q.fetch(1)
+      if len(result) != 0:
+        if result[0].password == None or result[0].password == password:
+          result[0].authToken = helpers.generateAuthToken()
+          result[0].put()
+          users_json = helpers.build_user_list_json([ result[0] ])
       # Set the response content type and dump the json
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(users_json))
