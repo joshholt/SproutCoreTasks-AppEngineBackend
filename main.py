@@ -565,8 +565,8 @@ class WatchHandler(webapp.RequestHandler):
 
 
 # Example command line invocations:
-# curl -X POST http://localhost:4400/tasks-server/cleanup -d ""
-# curl -X POST http://localhost:4400/tasks-server/cleanup -d "cutoff=1282279058109"
+# curl -X POST http://localhost:8091/tasks-server/cleanup -d ""
+# curl -X POST http://localhost:8091/tasks-server/cleanup -d "cutoff=1282279058109"
 class CleanupHandler(webapp.RequestHandler):
   """Deletes soft-deleted records more than a month old"""
   def post(self):
