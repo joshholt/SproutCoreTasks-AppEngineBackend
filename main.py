@@ -1,49 +1,8 @@
 #!/usr/bin/env python
 
-""" Prupose: To serve tasks & project to SG's Sproutcore Tasks application.
+""" Purpose: To serve tasks & project to SG's Sproutcore Tasks application.
     Author: Joshua Holt
-    Date: 09-30-2009
-    Last Modified: 02-14-2010
-    
-    ********* NOTE(2) ***********
-    I added a nasty hack that I am not proud of on line #84
-    
-    ********* SOLVED *************
-    
-    I've solved the issue below.. I had forgotten that python and a builtin
-    function "setattr(obj, attr, val)". If you want to see how it DRYed up
-    the code you can look through the commit log.
-    
-    
-    ********* NOTE ***************
-    This Code is not DRY it has been years since I've touched python
-     ruby spoiled me :)
-     
-     Trying figure out a way to loop through model_instance.properties()
-     and actually be able to use that to set the  model instance attrs
-     
-     Currently I am only able to do the 1/2 of the DRYing up that I want
-     to do.
-     
-     This is what I am trying to do in my helpers module:
-     
-     def apply_json_to_model_instance(model, json):
-       props = model.properties()
-       for key in props:
-         if json.has_key(key):
-           model.key = json[key]
-        
-        model.put()
-     
-     
-     But it seems that you cannot do this b/c I remember that you cannot
-     specify an object's attribute as a string and model instances are not
-     subscriptable.
-     
-     If anyone has any tips I am open for suggestions.
-     
-     thanks,
-     Joshua Holt
+    Author: Suvajit Gupta
 """
 
 # Google App Engine Imports
