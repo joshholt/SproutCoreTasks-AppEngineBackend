@@ -46,7 +46,7 @@
      Joshua Holt
 """
 
-# App Engine Imports
+# Google App Engine Imports
 import logging
 import sys
 import os
@@ -73,7 +73,7 @@ month_milliseconds = 30*24*60*60*1000
 
 class RecordsHandler(webapp.RequestHandler):
   
-  # Retrieve a list of all the Records.
+  # Retrieve a list of all records.
   def get(self):
     
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
@@ -121,7 +121,7 @@ class RecordsHandler(webapp.RequestHandler):
     else:
       self.response.set_status(401, "Not Authorized")
 
-class UsersHandler(webapp.RequestHandler):
+class UserHandler(webapp.RequestHandler):
   
   # Login a user given loginName and password.
   def get(self):
@@ -141,22 +141,16 @@ class UsersHandler(webapp.RequestHandler):
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(users_json))
   
-  # Create a new User
+  # Create a new user
   def post(self):
     if len(self.request.params) > 0:
       if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-        # collect the data from the record
         user_json = simplejson.loads(self.request.body)
-        
-        # create a user
         user = helpers.apply_json_to_model_instance(User(), user_json)
-        # save the new user
         user.put()
-        
         guid = user.key().id_or_name()
         new_url = "/tasks-server/user/%s" % guid
         user_json["id"] = guid
-        
         self.response.set_status(201, "User created")
         self.response.headers['Location'] = new_url
         self.response.headers['Content-Type'] = 'application/json'
@@ -176,9 +170,7 @@ class UsersHandler(webapp.RequestHandler):
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(user_json))
 
-
-class UserHandler(webapp.RequestHandler):
-  # Update an existing record
+  # Update an existing user with a given id
   def put(self, guid):
     # find the matching user
     key = db.Key.from_path('User', int(guid))
@@ -204,7 +196,7 @@ class UserHandler(webapp.RequestHandler):
     else:
       self.response.set_status(404, "User not found")
   
-  # delete the user with a given id
+  # Delete a user with a given id
   def delete(self, guid):
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
       # find the matching user and delete it if found
@@ -219,8 +211,69 @@ class UserHandler(webapp.RequestHandler):
       self.response.set_status(401, "Not Authorized")
 
 
-class TasksHandler(webapp.RequestHandler):
-  # Create a new Task
+class ProjectHandler(webapp.RequestHandler):
+  # Create a new project
+  def post(self):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      # collect the data from the record
+      project_json = simplejson.loads(self.request.body)
+      
+      # create a new project
+      project = helpers.apply_json_to_model_instance(Project(), project_json)
+      # save project
+      project.save()
+      
+      guid = project.key().id_or_name()
+      new_url = "/tasks-server/project/%s" % guid
+      project_json["id"] = guid
+      
+      self.response.set_status(201, "Project created")
+      self.response.headers['Location'] = new_url
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(project_json))
+    else:
+      self.response.set_status(401, "Not Authorized")
+
+  # Update an existing project with a given id
+  def put(self, guid):
+    """Update the project with the given id"""
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      key = db.Key.from_path('Project', int(guid))
+      project = db.get(key)
+      if not project == None:
+        # collect the json from the request
+        project_json = simplejson.loads(self.request.body)
+        # update the project record
+        project = helpers.apply_json_to_model_instance(project, project_json)
+        # save the updated data
+        project.put()
+        
+        # return the same record...
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write(simplejson.dumps(project_json))
+      
+      else:
+        self.response.set_status(404, "Project not found")
+    else:
+      self.response.set_status(401, "Not Authorized")
+  
+  # Delete a project with a given id
+  def delete(self, guid):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      # search for the Project and delete if found
+      key = db.Key.from_path('Project', int(guid))
+      project = db.get(key)
+      if not project == None:
+        project.delete()
+        self.response.set_status(204, "Deleted")
+      else:
+        self.response.set_status(404, "Not Found")
+    else:
+      self.response.set_status(401, "Not Authorized")
+
+
+class TaskHandler(webapp.RequestHandler):
+  # Create a new task
   def post(self):
     wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
     # collect the data from the record
@@ -248,10 +301,8 @@ class TasksHandler(webapp.RequestHandler):
     else:
       self.response.set_status(401, "Not Authorized")
 
-
-class TaskHandler(webapp.RequestHandler):
+  # Update an existing task with a given id
   def put(self, guid):
-    """Update the task with the given id"""
     key = db.Key.from_path('Task', int(guid))
     task = db.get(key)
     if task != None:
@@ -288,9 +339,9 @@ class TaskHandler(webapp.RequestHandler):
         self.response.set_status(401, "Not Authorized")
     else:
       self.response.set_status(404, "Task not found")
-  
+
+  # Delete a task with a given id
   def delete(self, guid):
-    """Delete the task with the given id"""
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
       # search for the Project and delete if found
       key = db.Key.from_path('Task', int(guid))
@@ -322,70 +373,8 @@ class TaskHandler(webapp.RequestHandler):
       self.response.set_status(401, "Not Authorized")
 
 
-class ProjectsHandler(webapp.RequestHandler):
-  # Create a new Project
-  def post(self):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      # collect the data from the record
-      project_json = simplejson.loads(self.request.body)
-      
-      # create a new project
-      project = helpers.apply_json_to_model_instance(Project(), project_json)
-      # save project
-      project.save()
-      
-      guid = project.key().id_or_name()
-      new_url = "/tasks-server/project/%s" % guid
-      project_json["id"] = guid
-      
-      self.response.set_status(201, "Project created")
-      self.response.headers['Location'] = new_url
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(project_json))
-    else:
-      self.response.set_status(401, "Not Authorized")
-
-
-class ProjectHandler(webapp.RequestHandler):
-  def put(self, guid):
-    """Update the project with the given id"""
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      key = db.Key.from_path('Project', int(guid))
-      project = db.get(key)
-      if not project == None:
-        # collect the json from the request
-        project_json = simplejson.loads(self.request.body)
-        # update the project record
-        project = helpers.apply_json_to_model_instance(project, project_json)
-        # save the updated data
-        project.put()
-        
-        # return the same record...
-        self.response.headers['Content-Type'] = 'application/json'
-        self.response.out.write(simplejson.dumps(project_json))
-      
-      else:
-        self.response.set_status(404, "Project not found")
-    else:
-      self.response.set_status(401, "Not Authorized")
-  
-  def delete(self, guid):
-    """Delete the project with the given id"""
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      # search for the Project and delete if found
-      key = db.Key.from_path('Project', int(guid))
-      project = db.get(key)
-      if not project == None:
-        project.delete()
-        self.response.set_status(204, "Deleted")
-      else:
-        self.response.set_status(404, "Not Found")
-    else:
-      self.response.set_status(401, "Not Authorized")
-
-
-class WatchesHandler(webapp.RequestHandler):
-  # Create a new Watch
+class WatchHandler(webapp.RequestHandler):
+  # Create a new watch
   def post(self):
     # collect the data from the record
     watch_json = simplejson.loads(self.request.body)
@@ -404,28 +393,7 @@ class WatchesHandler(webapp.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     self.response.out.write(simplejson.dumps(watch_json))
 
-
-class WatchHandler(webapp.RequestHandler):
-  # Update an existing record
-  def put(self, guid):
-    # find the matching watch
-    key = db.Key.from_path('Watch', int(guid))
-    watch = db.get(key)
-    if not watch == None:
-      
-      # collect the data from the record
-      watch_json = simplejson.loads(self.request.body)
-      # update the record
-      watch = helpers.apply_json_to_model_instance(watch, watch_json)
-      # save the record
-      watch.put()
-      # return the same record...
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(watch_json))
-    else:
-      self.response.set_status(404, "Watch not found")
-  
-  # delete the watch with a given id
+  # Delete a watch with a given id
   def delete(self, guid):
     # find the matching watch and delete it if found
     key = db.Key.from_path('Watch', int(guid))
@@ -437,11 +405,12 @@ class WatchHandler(webapp.RequestHandler):
       self.response.set_status(404, "Not Found")
 
 
+# Deletes soft-deleted records more than a month old
+#
 # Example command line invocations:
 # curl -X POST http://localhost:8091/tasks-server/cleanup -d ""
 # curl -X POST http://localhost:8091/tasks-server/cleanup -d "cutoff=1282279058109"
 class CleanupHandler(webapp.RequestHandler):
-  """Deletes soft-deleted records more than a month old"""
   def post(self):
     cutoff = ''
     
@@ -498,8 +467,8 @@ class CleanupHandler(webapp.RequestHandler):
     self.response.out.write(simplejson.dumps(records_json))
     
 
+# Logs off a user wiht a given id
 class LogoutHandler(webapp.RequestHandler):
-  """Logs off a user"""
   def post(self):
     userId = self.request.get('id')
     # find the matching user
@@ -517,8 +486,8 @@ class LogoutHandler(webapp.RequestHandler):
       self.response.set_status(404, "User not found")    
 
 
+# The Mail worker processes the mail queue
 class MailWorker(webapp.RequestHandler):
-  """The Mail worker works off the mail queue"""
   def post(self):
     action = {"createTask": "created", "updateTask": "updated", "deleteTask": "deleted"}.get(self.request.get('action'))
     name = self.request.get('name')
@@ -537,13 +506,13 @@ class MailWorker(webapp.RequestHandler):
 def main():
   application = webapp.WSGIApplication([
     (r'/tasks-server/records?$', RecordsHandler),
-    (r'/tasks-server/user?$', UsersHandler),
-    (r'/tasks-server/project?$', ProjectsHandler),
-    (r'/tasks-server/task?$', TasksHandler),
-    (r'/tasks-server/watch?$', WatchesHandler),
+    (r'/tasks-server/user?$', UserHandler),
     (r'/tasks-server/user/([^\.]+)?$', UserHandler),
+    (r'/tasks-server/project?$', ProjectHandler),
     (r'/tasks-server/project/([^\.]+)?$', ProjectHandler),
+    (r'/tasks-server/task?$', TaskHandler),
     (r'/tasks-server/task/([^\.]+)?$', TaskHandler),
+    (r'/tasks-server/watch?$', WatchHandler),
     (r'/tasks-server/watch/([^\.]+)?$', WatchHandler),
     (r'/tasks-server/cleanup', CleanupHandler),
     (r'/tasks-server/logout', LogoutHandler),
