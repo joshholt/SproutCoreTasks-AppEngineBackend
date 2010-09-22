@@ -18,19 +18,25 @@ def apply_json_to_model_instance(model, jobj):
   
   return model  
 
+def build_user_json(user, send_auth_token):
+  user_json = { "id": "%s" % user.key().id_or_name(),
+    "name": user.name,
+    "loginName": user.loginName,
+    "role": user.role,
+    "preferences": {},
+    "email": user.email, 
+    "password": "password" if user.password != None and len(user.password) != 0 else "",
+    "status": user.status, 
+    "createdAt": user.createdAt, 
+    "updatedAt": user.updatedAt }
+  if send_auth_token:
+    user_json["authToken"] = user.authToken if user.authToken != None else ""
+  return user_json
+
 def build_user_list_json(list):
   users_json = []
   for user in list:
-    user_json = { "id": "%s" % user.key().id_or_name(),
-      "name": user.name,
-      "loginName": user.loginName, "role": user.role,
-      "preferences": {}, "email": user.email, "authToken": user.authToken if user.authToken != None else "", 
-      "password": "password" if user.password != None and len(user.password) != 0 else "",
-      "status": user.status, 
-      "createdAt": user.createdAt, 
-      "updatedAt": user.updatedAt }
-  
-    users_json.append(user_json)
+    users_json.append(build_user_json(user, False))
   return users_json
 
 def build_task_list_json(list):
@@ -103,7 +109,9 @@ def authorized(userId, authToken, action):
       "deleteTask": lambda role: True if not role == "None" else False,
       "createUser": lambda role: True if role == "_Manager" else False,
       "updateUser": True,
-      "deleteUser": lambda role: True if role == "_Manager" else False
+      "deleteUser": lambda role: True if role == "_Manager" else False,
+      "createWatch": True,
+      "deleteWatch": True
       }[action](str(user.role))
     else:
       retVal = False

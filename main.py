@@ -25,8 +25,9 @@ from models import Project
 from models import Watch
 
 # Helper Imports
-import helpers,notification
+import helpers, notification
 
+# Global constants
 max_results = 10000000
 month_milliseconds = 30*24*60*60*1000
 
@@ -80,6 +81,7 @@ class RecordsHandler(webapp.RequestHandler):
     else:
       self.response.set_status(401, "Not Authorized")
 
+
 class UserHandler(webapp.RequestHandler):
   
   # Login a user given loginName and password.
@@ -95,7 +97,7 @@ class UserHandler(webapp.RequestHandler):
         if result[0].password == None or result[0].password == password:
           result[0].authToken = helpers.generateAuthToken()
           result[0].put()
-          users_json = helpers.build_user_list_json([ result[0] ])
+          users_json = [ helpers.build_user_json(result[0], True) ]
       # Set the response content type and dump the json
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(users_json))
