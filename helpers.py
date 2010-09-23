@@ -37,6 +37,7 @@ def build_user_list_json(list):
   users_json = []
   for user in list:
     users_json.append(build_user_json(user, False))
+    
   return users_json
 
 def build_task_list_json(list):
@@ -101,6 +102,8 @@ def authorized(userId, authToken, action):
     if user.authToken == authToken:
       retVal = {
       "getRecords": lambda role: True if not role == "None" else False,
+      "updateUser": True,
+      "deleteUser": lambda role: True if role == "_Manager" else False,
       "createProject": lambda role: True if role == "_Manager" else False,
       "updateProject": lambda role: True if role == "_Manager" else False,
       "deleteProject": lambda role: True if role == "_Manager" else False,
@@ -108,8 +111,6 @@ def authorized(userId, authToken, action):
       "updateTask": True,
       "deleteTask": lambda role: True if not role == "None" else False,
       "createUser": lambda role: True if role == "_Manager" else False,
-      "updateUser": True,
-      "deleteUser": lambda role: True if role == "_Manager" else False,
       "createWatch": True,
       "deleteWatch": True
       }[action](str(user.role))

@@ -51,14 +51,14 @@ class RecordsHandler(webapp.RequestHandler):
         q.filter('updatedAt >', int(lastRetrievedAt))
         result = q.fetch(max_results)
         users_json = helpers.build_user_list_json(result)
-        q = Task.all()
-        q.filter('updatedAt >', int(lastRetrievedAt))
-        result = q.fetch(max_results)
-        tasks_json = helpers.build_task_list_json(result)
         q = Project.all()
         q.filter('updatedAt >', int(lastRetrievedAt))
         result = q.fetch(max_results)
         projects_json = helpers.build_project_list_json(result)
+        q = Task.all()
+        q.filter('updatedAt >', int(lastRetrievedAt))
+        result = q.fetch(max_results)
+        tasks_json = helpers.build_task_list_json(result)
         q = Watch.all()
         q.filter('updatedAt >', int(lastRetrievedAt))
         result = q.fetch(max_results)
@@ -66,8 +66,8 @@ class RecordsHandler(webapp.RequestHandler):
     
       result = {
        "users": users_json,
-       "tasks": tasks_json,
        "projects": projects_json,
+       "tasks": tasks_json,
        "watches": watches_json
       }
     
@@ -80,27 +80,36 @@ class RecordsHandler(webapp.RequestHandler):
       self.response.out.write(simplejson.dumps(records_json))
     else:
       self.response.set_status(401, "Not Authorized")
+      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
 
 
 class UserHandler(webapp.RequestHandler):
   
-  # Login a user given loginName and password.
   def get(self):
     users_json = []
-    if len(self.request.params) == 2:
+    param_count = len(self.request.params)
+    self.response.headers['Content-Type'] = 'application/json'
+    if param_count > 0:
       loginName = self.request.params['loginName'].strip().replace("\'","")
-      password = self.request.params['password'].strip().replace("\'","")
       q = User.all()
       q.filter('loginName =', loginName)
       result = q.fetch(1)
-      if len(result) != 0:
+      result_count = len(result)
+    # Check if a specified loginName is available
+    if param_count == 1:
+      self.response.out.write(simplejson.dumps({ "loginNameAvailable": "yes" if result_count == 0 else "no"}))
+    # Login a user given loginName and password
+    elif param_count == 2:
+      password = self.request.params['password'].strip().replace("\'","")
+      if result_count != 0:
         if result[0].password == None or result[0].password == password:
           result[0].authToken = helpers.generateAuthToken()
           result[0].put()
           users_json = [ helpers.build_user_json(result[0], True) ]
-      # Set the response content type and dump the json
-      self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(users_json))
+    else:
+      self.response.set_status(401, "Invalid parameters")
+      self.response.out.write(simplejson.dumps({ "message": 'Need 1 or 2 parameters for this call'}))
   
   # Create a new user
   def post(self):
@@ -118,6 +127,7 @@ class UserHandler(webapp.RequestHandler):
         self.response.out.write(simplejson.dumps(user_json))
       else:
         self.response.set_status(401, "Not Authorized")
+        self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
     else:
       user_json = simplejson.loads(self.request.body)
       user = helpers.apply_json_to_model_instance(User(), user_json)
@@ -147,6 +157,7 @@ class UserHandler(webapp.RequestHandler):
       if str(user.role) != user_json['role'] and str(cuser.role) != "_Manager":
         user_json['role'] = str(user.role)
         self.response.set_status(401, "Not Authorized")
+        self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
       # update the record
       user = helpers.apply_json_to_model_instance(user, user_json)
       # save the record
@@ -156,6 +167,7 @@ class UserHandler(webapp.RequestHandler):
       self.response.out.write(simplejson.dumps(user_json))
     else:
       self.response.set_status(404, "User not found")
+      self.response.out.write(simplejson.dumps({ "message": 'Cannot update missing user'}))
   
   # Delete a user with a given id
   def delete(self, guid):
@@ -167,9 +179,11 @@ class UserHandler(webapp.RequestHandler):
         user.delete()
         self.response.set_status(204, "Deleted")
       else:
-        self.response.set_status(404, "Not Found")
+        self.response.set_status(404, "User not found")
+        self.response.out.write(simplejson.dumps({ "message": 'Cannot delete missing user'}))
     else:
       self.response.set_status(401, "Not Authorized")
+      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
 
 
 class ProjectHandler(webapp.RequestHandler):
@@ -194,6 +208,7 @@ class ProjectHandler(webapp.RequestHandler):
       self.response.out.write(simplejson.dumps(project_json))
     else:
       self.response.set_status(401, "Not Authorized")
+      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
 
   # Update an existing project with a given id
   def put(self, guid):
@@ -215,8 +230,10 @@ class ProjectHandler(webapp.RequestHandler):
       
       else:
         self.response.set_status(404, "Project not found")
+        self.response.out.write(simplejson.dumps({ "message": 'Cannot update missing project'}))
     else:
       self.response.set_status(401, "Not Authorized")
+      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
   
   # Delete a project with a given id
   def delete(self, guid):
@@ -228,9 +245,11 @@ class ProjectHandler(webapp.RequestHandler):
         project.delete()
         self.response.set_status(204, "Deleted")
       else:
-        self.response.set_status(404, "Not Found")
+        self.response.set_status(404, "Project not found")
+        self.response.out.write(simplejson.dumps({ "message": 'Cannot update missing project'}))
     else:
       self.response.set_status(401, "Not Authorized")
+      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
 
 
 class TaskHandler(webapp.RequestHandler):
@@ -261,6 +280,7 @@ class TaskHandler(webapp.RequestHandler):
       self.response.out.write(simplejson.dumps(task_json))
     else:
       self.response.set_status(401, "Not Authorized")
+      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
 
   # Update an existing task with a given id
   def put(self, guid):
@@ -298,8 +318,10 @@ class TaskHandler(webapp.RequestHandler):
         self.response.out.write(simplejson.dumps(task_json))
       else:
         self.response.set_status(401, "Not Authorized")
+        self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
     else:
       self.response.set_status(404, "Task not found")
+      self.response.out.write(simplejson.dumps({ "message": 'Cannot update missing task'}))
 
   # Delete a task with a given id
   def delete(self, guid):
@@ -329,9 +351,11 @@ class TaskHandler(webapp.RequestHandler):
         task.delete()
         self.response.set_status(204, "Deleted")
       else:
-        self.response.set_status(404, "Not Found")
+        self.response.set_status(404, "Task not found")
+        self.response.out.write(simplejson.dumps({ "message": 'Cannot delete missing task'}))
     else:
       self.response.set_status(401, "Not Authorized")
+      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
 
 
 class WatchHandler(webapp.RequestHandler):
@@ -363,7 +387,8 @@ class WatchHandler(webapp.RequestHandler):
       watch.delete()
       self.response.set_status(204, "Deleted")
     else:
-      self.response.set_status(404, "Not Found")
+      self.response.set_status(404, "Watch not found")
+      self.response.out.write(simplejson.dumps({ "message": 'Cannot delete missing watch'}))
 
 
 # Deletes soft-deleted records more than a month old
@@ -445,6 +470,7 @@ class LogoutHandler(webapp.RequestHandler):
       self.response.out.write(simplejson.dumps({ "message": 'Logout successful'}))
     else:
       self.response.set_status(404, "User not found")    
+      self.response.out.write(simplejson.dumps({ "message": 'Record missing'}))
 
 
 # The Mail worker processes the mail queue
