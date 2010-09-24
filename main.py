@@ -79,8 +79,7 @@ class RecordsHandler(webapp.RequestHandler):
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(records_json))
     else:
-      self.response.set_status(401, "Not Authorized")
-      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
+      helpers.report_unauthorized_access(self.response)
 
 
 class UserHandler(webapp.RequestHandler):
@@ -103,7 +102,7 @@ class UserHandler(webapp.RequestHandler):
       password = self.request.params['password'].strip().replace("\'","")
       if result_count != 0:
         if result[0].password == None or result[0].password == password:
-          result[0].authToken = helpers.generateAuthToken()
+          result[0].authToken = helpers.generate_auth_token()
           result[0].put()
           users_json = [ helpers.build_user_json(result[0], True) ]
       self.response.out.write(simplejson.dumps(users_json))
@@ -117,39 +116,33 @@ class UserHandler(webapp.RequestHandler):
       if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
         helpers.create_user(self.request, self.response, False)
       else:
-        self.response.set_status(401, "Not Authorized")
-        self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
+        helpers.report_unauthorized_access(self.response)
     # Signup a new user
     else:
       helpers.create_user(self.request, self.response, True)
 
   # Update an existing user with a given id
   def put(self, guid):
-    # find the matching user
-    key = db.Key.from_path('User', int(guid))
-    user = db.get(key)
-    if not user == None:
-      # collect the data from the record
-      user_json = simplejson.loads(self.request.body)
-      # The following keeps Guests and Developers and Testers from being able
-      # to change their role.
-      currentUserId = self.request.params['UUID']
-      cukey = db.Key.from_path('User', int(currentUserId))
-      cuser = db.get(cukey)
-      if str(user.role) != user_json['role'] and str(cuser.role) != "_Manager":
-        user_json['role'] = str(user.role)
-        self.response.set_status(401, "Not Authorized")
-        self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
-      # update the record
-      user = helpers.apply_json_to_model_instance(user, user_json)
-      # save the record
-      user.put()
-      # return the same record...
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(user_json))
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      key = db.Key.from_path('User', int(guid))
+      user = db.get(key)
+      if not user == None:
+        user_json = simplejson.loads(self.request.body)
+        # Prevent non-Managers from changing their role
+        currentUserId = self.request.params['UUID']
+        cukey = db.Key.from_path('User', int(currentUserId))
+        cuser = db.get(cukey)
+        if str(user.role) != user_json['role'] and str(cuser.role) != "_Manager":
+          user_json['role'] = str(user.role)
+          helpers.report_unauthorized_access(self.response)
+        user = helpers.apply_json_to_model_instance(user, user_json)
+        user.put()
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write(simplejson.dumps(user_json))
+      else:
+        helpers.report_missing_record(self.response)
     else:
-      self.response.set_status(404, "User not found")
-      self.response.out.write(simplejson.dumps({ "message": 'Cannot update missing user'}))
+      helpers.report_unauthorized_access(self.response)
   
   # Delete a user with a given id
   def delete(self, guid):
@@ -161,36 +154,27 @@ class UserHandler(webapp.RequestHandler):
         user.delete()
         self.response.set_status(204, "Deleted")
       else:
-        self.response.set_status(404, "User not found")
-        self.response.out.write(simplejson.dumps({ "message": 'Cannot delete missing user'}))
+        helpers.report_missing_record(self.response)
     else:
-      self.response.set_status(401, "Not Authorized")
-      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
+      helpers.report_unauthorized_access(self.response)
 
 
 class ProjectHandler(webapp.RequestHandler):
   # Create a new project
   def post(self):
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      # collect the data from the record
       project_json = simplejson.loads(self.request.body)
-      
-      # create a new project
       project = helpers.apply_json_to_model_instance(Project(), project_json)
-      # save project
       project.save()
-      
       guid = project.key().id_or_name()
       new_url = "/tasks-server/project/%s" % guid
       project_json["id"] = guid
-      
       self.response.set_status(201, "Project created")
       self.response.headers['Location'] = new_url
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(project_json))
     else:
-      self.response.set_status(401, "Not Authorized")
-      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
+      helpers.report_unauthorized_access(self.response)
 
   # Update an existing project with a given id
   def put(self, guid):
@@ -199,56 +183,42 @@ class ProjectHandler(webapp.RequestHandler):
       key = db.Key.from_path('Project', int(guid))
       project = db.get(key)
       if not project == None:
-        # collect the json from the request
         project_json = simplejson.loads(self.request.body)
-        # update the project record
         project = helpers.apply_json_to_model_instance(project, project_json)
-        # save the updated data
         project.put()
-        
-        # return the same record...
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(project_json))
-      
       else:
-        self.response.set_status(404, "Project not found")
-        self.response.out.write(simplejson.dumps({ "message": 'Cannot update missing project'}))
+        helpers.report_missing_record(self.response)
     else:
-      self.response.set_status(401, "Not Authorized")
-      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
+      helpers.report_unauthorized_access(self.response)
   
   # Delete a project with a given id
   def delete(self, guid):
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      # search for the Project and delete if found
       key = db.Key.from_path('Project', int(guid))
       project = db.get(key)
       if not project == None:
         project.delete()
         self.response.set_status(204, "Deleted")
       else:
-        self.response.set_status(404, "Project not found")
-        self.response.out.write(simplejson.dumps({ "message": 'Cannot update missing project'}))
+        helpers.report_missing_record(self.response)
     else:
-      self.response.set_status(401, "Not Authorized")
-      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
+      helpers.report_unauthorized_access(self.response)
 
 
 class TaskHandler(webapp.RequestHandler):
   # Create a new task
   def post(self):
     wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
-    # collect the data from the record
     task_json = simplejson.loads(self.request.body)
     logging.info(self.request.body)
-    # if the user is a guest the project must be unallocated
+    # if the user is a Guest the project must be unallocated
     currentUserId = self.request.params['UUID']
     cukey = db.Key.from_path('User', int(currentUserId))
     user = db.get(cukey)
     if str(user.role) != '_Guest' or (task_json.has_key('projectId') == False or task_json['projectId'] == None):
-      # create a new task with the passed in json
       task = helpers.apply_json_to_model_instance(Task(),task_json)
-      # save task
       task.put()
       guid = task.key().id_or_name()
       # Push notification email on the queue if the task has some sort of status, etc..
@@ -261,8 +231,7 @@ class TaskHandler(webapp.RequestHandler):
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps(task_json))
     else:
-      self.response.set_status(401, "Not Authorized")
-      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
+      helpers.report_unauthorized_access(self.response)
 
   # Update an existing task with a given id
   def put(self, guid):
@@ -280,30 +249,24 @@ class TaskHandler(webapp.RequestHandler):
       taskEffort = task.effort
       taskProjectId = task.projectId
       taskDescription = task.description
-      # collect the json from the request
       task_json = simplejson.loads(self.request.body)
-      # if the user is a guest the project must be unallocated
+      # if the user is a Guest the project must be unallocated
       wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
       currentUserId = self.request.params['UUID']
       cukey = db.Key.from_path('User', int(currentUserId))
       user = db.get(cukey)
       if str(user.role) != '_Guest' or (task_json.has_key('projectId') == False or task_json['projectId'] == None):
-        # update the project record
         task = helpers.apply_json_to_model_instance(task, task_json)
-        # save the updated data
         task.put()
         # Push notification email on the queue if we need to notify
         if notification.should_notify(currentUserId,task,"updateTask",wantsNotifications):
           taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask", 'name': taskName, 'type': taskType, 'priority': taskPriority, 'status': taskStatus, 'validation': taskValidation, 'submitterId': taskSubmitterId, 'assigneeId': taskAssigneeId, 'effort': taskEffort, 'projectId': taskProjectId, 'description': taskDescription})
-        # return the same record...
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(task_json))
       else:
-        self.response.set_status(401, "Not Authorized")
-        self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
+        helpers.report_unauthorized_access(self.response)
     else:
-      self.response.set_status(404, "Task not found")
-      self.response.out.write(simplejson.dumps({ "message": 'Cannot update missing task'}))
+      helpers.report_missing_record(self.response)
 
   # Delete a task with a given id
   def delete(self, guid):
@@ -333,48 +296,54 @@ class TaskHandler(webapp.RequestHandler):
         task.delete()
         self.response.set_status(204, "Deleted")
       else:
-        self.response.set_status(404, "Task not found")
-        self.response.out.write(simplejson.dumps({ "message": 'Cannot delete missing task'}))
+        helpers.report_missing_record(self.response)
     else:
-      self.response.set_status(401, "Not Authorized")
-      self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
+      helpers.report_unauthorized_access(self.response)
 
 
 class WatchHandler(webapp.RequestHandler):
   # Create a new watch
   def post(self):
-    # collect the data from the record
     watch_json = simplejson.loads(self.request.body)
-    #logging.info(self.request.body)
-    # create a watch
     watch = helpers.apply_json_to_model_instance(Watch(), watch_json)
-    # save the new watch
     watch.put()
-    
     guid = watch.key().id_or_name()
     new_url = "/tasks-server/watch/%s" % guid
     watch_json["id"] = guid
-    
     self.response.set_status(201, "Watch created")
     self.response.headers['Location'] = new_url
     self.response.headers['Content-Type'] = 'application/json'
     self.response.out.write(simplejson.dumps(watch_json))
 
+  # Update an existing watch with a given id
+  def put(self, guid):
+    """Update the watch with the given id"""
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      key = db.Key.from_path('Watch', int(guid))
+      watch = db.get(key)
+      if not watch == None:
+        watch_json = simplejson.loads(self.request.body)
+        watch = helpers.apply_json_to_model_instance(watch, watch_json)
+        watch.put()
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write(simplejson.dumps(watch_json))
+      else:
+        helpers.report_missing_record(self.response)
+    else:
+      helpers.report_unauthorized_access(self.response)
+
   # Delete a watch with a given id
   def delete(self, guid):
-    # find the matching watch and delete it if found
     key = db.Key.from_path('Watch', int(guid))
     watch = db.get(key)
     if not watch == None:
       watch.delete()
       self.response.set_status(204, "Deleted")
     else:
-      self.response.set_status(404, "Watch not found")
-      self.response.out.write(simplejson.dumps({ "message": 'Cannot delete missing watch'}))
+      helpers.report_missing_record(self.response)
 
 
-# Deletes soft-deleted records more than a month old
-#
+# Deletes soft-deleted records more than a month old.
 # Example command line invocations:
 # curl -X POST http://localhost:8091/tasks-server/cleanup -d ""
 # curl -X POST http://localhost:8091/tasks-server/cleanup -d "cutoff=1282279058109"
@@ -429,7 +398,6 @@ class CleanupHandler(webapp.RequestHandler):
       "result": result
     }
   
-    # Set the response content type and dump the json
     self.response.set_status(200, "Data Cleaned Out")
     self.response.headers['Content-Type'] = 'application/json'
     self.response.out.write(simplejson.dumps(records_json))
@@ -445,14 +413,12 @@ class LogoutHandler(webapp.RequestHandler):
     if not user == None:
       # clear out authentication token
       user.authToken = None
-      # save the record
       user.put()
       self.response.set_status(200, "User logged out")
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(simplejson.dumps({ "message": 'Logout successful'}))
     else:
-      self.response.set_status(404, "User not found")    
-      self.response.out.write(simplejson.dumps({ "message": 'Record missing'}))
+      helpers.report_missing_record(self.response)
 
 
 # The Mail worker processes the mail queue

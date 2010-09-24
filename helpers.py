@@ -19,7 +19,7 @@ def apply_json_to_model_instance(model, jobj):
   
   return model  
 
-def generateAuthToken():
+def generate_auth_token():
   """This method generates the authToken for a user every time they login"""
   return hashlib.sha1("This--is--the--authToken--%s" % time.mktime(datetime.datetime.utcnow().timetuple())).hexdigest()
 
@@ -28,7 +28,7 @@ def create_user(request, response, signup):
   user = apply_json_to_model_instance(User(), user_json)
   if signup:
     user.role = "_Guest"
-    user.authToken = generateAuthToken()
+    user.authToken = generate_auth_token()
   user.put()
   guid = user.key().id_or_name()
   new_url = "/tasks-server/user/%s" % guid
@@ -118,20 +118,30 @@ def authorized(userId, authToken, action):
     if user.authToken == authToken:
       retVal = {
       "getRecords": lambda role: True if not role == "None" else False,
-      "updateUser": True,
+      "updateUser": lambda role: True if not role == "None" else False,
       "deleteUser": lambda role: True if role == "_Manager" else False,
       "createProject": lambda role: True if role == "_Manager" else False,
       "updateProject": lambda role: True if role == "_Manager" else False,
       "deleteProject": lambda role: True if role == "_Manager" else False,
-      "createTask": True,
-      "updateTask": True,
+      "createTask": lambda role: True if not role == "None" else False,
+      "updateTask": lambda role: True if not role == "None" else False,
       "deleteTask": lambda role: True if not role == "None" else False,
       "createUser": lambda role: True if role == "_Manager" else False,
-      "createWatch": True,
-      "deleteWatch": True
+      "createWatch": lambda role: True if not role == "None" else False,
+      "deleteWatch": lambda role: True if not role == "None" else False
       }[action](str(user.role))
     else:
       retVal = False
   else:
     retVal = False
   return retVal
+
+def report_unauthorized_access(response):
+  """Report unauthorized access"""
+  response.set_status(401, "Unauthorized")
+  response.out.write(simplejson.dumps({ "message": 'Access denied'}))
+
+def report_missing_record(response):
+  """Report unauthorized access"""
+  self.response.set_status(404, "Missing Record")
+  self.response.out.write(simplejson.dumps({ "message": 'Cannot find record with given id'}))
