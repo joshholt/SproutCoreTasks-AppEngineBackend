@@ -111,35 +111,17 @@ class UserHandler(webapp.RequestHandler):
       self.response.set_status(401, "Invalid parameters")
       self.response.out.write(simplejson.dumps({ "message": 'Need 1 or 2 parameters for this call'}))
   
-  # Create a new user
   def post(self):
+    # Create a new user
     if len(self.request.params) > 0:
       if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-        user_json = simplejson.loads(self.request.body)
-        user = helpers.apply_json_to_model_instance(User(), user_json)
-        user.put()
-        guid = user.key().id_or_name()
-        new_url = "/tasks-server/user/%s" % guid
-        user_json["id"] = guid
-        self.response.set_status(201, "User created")
-        self.response.headers['Location'] = new_url
-        self.response.headers['Content-Type'] = 'application/json'
-        self.response.out.write(simplejson.dumps(user_json))
+        helpers.create_user(self.request, self.response, False)
       else:
         self.response.set_status(401, "Not Authorized")
         self.response.out.write(simplejson.dumps({ "message": 'Permission denied'}))
+    # Signup a new user
     else:
-      user_json = simplejson.loads(self.request.body)
-      user = helpers.apply_json_to_model_instance(User(), user_json)
-      user.authToken = helpers.generateAuthToken()
-      user.put()
-      guid = user.key().id_or_name()
-      new_url = "/tasks-server/user/%s" % guid
-      user_json["id"] = guid
-      self.response.set_status(201, "User created")
-      self.response.headers['Location'] = new_url
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps(user_json))
+      helpers.create_user(self.request, self.response, True)
 
   # Update an existing user with a given id
   def put(self, guid):

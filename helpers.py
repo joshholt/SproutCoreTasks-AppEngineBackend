@@ -7,6 +7,7 @@
 import time,datetime,hashlib,models
 from google.appengine.ext import db
 from models import User, Task, Project
+from django.utils import simplejson
 
 #-----------------------------------------------------------------------------
 # GENERAL JSON HELPERS
@@ -17,6 +18,25 @@ def apply_json_to_model_instance(model, jobj):
     setattr(model, key, jobj[key] if jobj.has_key(key) else None)
   
   return model  
+
+def generateAuthToken():
+  """This method generates the authToken for a user every time they login"""
+  return hashlib.sha1("This--is--the--authToken--%s" % time.mktime(datetime.datetime.utcnow().timetuple())).hexdigest()
+
+def create_user(request, response, signup):
+  user_json = simplejson.loads(request.body)
+  user = apply_json_to_model_instance(User(), user_json)
+  if signup:
+    user.role = "_Guest"
+    user.authToken = generateAuthToken()
+  user.put()
+  guid = user.key().id_or_name()
+  new_url = "/tasks-server/user/%s" % guid
+  user_json["id"] = guid
+  response.set_status(201, "User created")
+  response.headers['Location'] = new_url
+  response.headers['Content-Type'] = 'application/json'
+  response.out.write(simplejson.dumps(user_json))
 
 def build_user_json(user, send_auth_token):
   user_json = { "id": "%s" % user.key().id_or_name(),
@@ -84,10 +104,6 @@ def build_watch_list_json(list):
     
     watches_json.append(watch_json)
   return watches_json
-
-def generateAuthToken():
-  """This method generates the authToken for a user every time they login"""
-  return hashlib.sha1("This--is--the--authToken--%s" % time.mktime(datetime.datetime.utcnow().timetuple())).hexdigest()
 
 #-----------------------------------------------------------------------------
 # AUTHORIZATION
