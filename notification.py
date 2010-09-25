@@ -12,7 +12,7 @@ from google.appengine.ext import db
 # Data Model Imports
 from models import User, Task, Project
 
-def should_notify(currentUserId, task, action, wantsNotifications = True):
+def should_notify(currentUserId, task, wantsNotifications = True):
   """Determines if a notification should be sent"""
   currentUserKey = db.Key.from_path('User', int(currentUserId))
   currentUser = db.get(currentUserKey)
@@ -44,8 +44,6 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
   # get all watches for task (like user authentication in main.py)
   watcherIds = []; watcherEmails = []
   q = db.GqlQuery("SELECT * FROM Watch WHERE taskId = %s" % taskId)
-  #result = q.fetch()
-  #if len(result) != 0:
   # for each watch, push userId into array
   for watch in q:
     watcherIds.append(watch.userId)

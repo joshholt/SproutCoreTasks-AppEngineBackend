@@ -178,7 +178,6 @@ class ProjectHandler(webapp.RequestHandler):
 
   # Update an existing project with a given id
   def put(self, guid):
-    """Update the project with the given id"""
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
       key = db.Key.from_path('Project', int(guid))
       project = db.get(key)
@@ -210,19 +209,21 @@ class ProjectHandler(webapp.RequestHandler):
 class TaskHandler(webapp.RequestHandler):
   # Create a new task
   def post(self):
-    wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
-    task_json = simplejson.loads(self.request.body)
-    logging.info(self.request.body)
-    # if the user is a Guest the project must be unallocated
-    currentUserId = self.request.params['UUID']
-    cukey = db.Key.from_path('User', int(currentUserId))
-    user = db.get(cukey)
-    if str(user.role) != '_Guest' or (task_json.has_key('projectId') == False or task_json['projectId'] == None):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
+      task_json = simplejson.loads(self.request.body)
+      logging.info(self.request.body)
       task = helpers.apply_json_to_model_instance(Task(),task_json)
+      # ensure Guest-created tasks are unallocated
+      currentUserId = self.request.params['UUID']
+      cukey = db.Key.from_path('User', int(currentUserId))
+      user = db.get(cukey)
+      if str(user.role) == '_Guest' and task_json.has_key('projectId') == True and task_json['projectId'] != None:
+        task.projectId = None
       task.put()
       guid = task.key().id_or_name()
       # Push notification email on the queue if the task has some sort of status, etc..
-      if notification.should_notify(currentUserId,task,"createTask", wantsNotifications):
+      if notification.should_notify(currentUserId, task, wantsNotifications):
         taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "createTask", 'name': "New Task"})
       new_url = "/tasks-server/task/%s" % guid
       task_json["id"] = guid
@@ -235,49 +236,50 @@ class TaskHandler(webapp.RequestHandler):
 
   # Update an existing task with a given id
   def put(self, guid):
-    key = db.Key.from_path('Task', int(guid))
-    task = db.get(key)
-    if task != None:
-      # cache current values before updates
-      taskName = task.name
-      taskType = task.type
-      taskPriority = task.priority
-      taskStatus = task.developmentStatus
-      taskValidation = task.validation
-      taskSubmitterId = task.submitterId
-      taskAssigneeId = task.assigneeId
-      taskEffort = task.effort
-      taskProjectId = task.projectId
-      taskDescription = task.description
-      task_json = simplejson.loads(self.request.body)
-      # if the user is a Guest the project must be unallocated
-      wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
-      currentUserId = self.request.params['UUID']
-      cukey = db.Key.from_path('User', int(currentUserId))
-      user = db.get(cukey)
-      if str(user.role) != '_Guest' or (task_json.has_key('projectId') == False or task_json['projectId'] == None):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      key = db.Key.from_path('Task', int(guid))
+      task = db.get(key)
+      if task != None:
+        # cache current values before updates
+        taskName = task.name
+        taskType = task.type
+        taskPriority = task.priority
+        taskStatus = task.developmentStatus
+        taskValidation = task.validation
+        taskSubmitterId = task.submitterId
+        taskAssigneeId = task.assigneeId
+        taskEffort = task.effort
+        taskProjectId = task.projectId
+        taskDescription = task.description
+        task_json = simplejson.loads(self.request.body)
+        wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
         task = helpers.apply_json_to_model_instance(task, task_json)
+        # ensure Guest-created tasks are unallocated
+        currentUserId = self.request.params['UUID']
+        cukey = db.Key.from_path('User', int(currentUserId))
+        user = db.get(cukey)
+        if str(user.role) == '_Guest' and task_json.has_key('projectId') == True and task_json['projectId'] != None:
+          taskProjectId = task.projectId = None
         task.put()
         # Push notification email on the queue if we need to notify
-        if notification.should_notify(currentUserId,task,"updateTask",wantsNotifications):
-          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "updateTask", 'name': taskName, 'type': taskType, 'priority': taskPriority, 'status': taskStatus, 'validation': taskValidation, 'submitterId': taskSubmitterId, 'assigneeId': taskAssigneeId, 'effort': taskEffort, 'projectId': taskProjectId, 'description': taskDescription})
+        action = "deleteTask" if task.status == "deleted" else "updateTask"
+        if notification.should_notify(currentUserId, task, wantsNotifications):
+          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': action, 'name': taskName, 'type': taskType, 'priority': taskPriority, 'status': taskStatus, 'validation': taskValidation, 'submitterId': taskSubmitterId, 'assigneeId': taskAssigneeId, 'effort': taskEffort, 'projectId': taskProjectId, 'description': taskDescription})
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(task_json))
       else:
-        helpers.report_unauthorized_access(self.response)
+        helpers.report_missing_record(self.response)
     else:
-      helpers.report_missing_record(self.response)
-
+      helpers.report_unauthorized_access(self.response)
+      
   # Delete a task with a given id
   def delete(self, guid):
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      # search for the Project and delete if found
       key = db.Key.from_path('Task', int(guid))
       task = db.get(key)
       wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
       currentUserId = self.request.params['UUID']
       cukey = db.Key.from_path('User', int(currentUserId))
-      user = db.get(cukey)
       if not task == None:
         # cache current values before updates
         taskName = task.name
@@ -291,7 +293,7 @@ class TaskHandler(webapp.RequestHandler):
         taskProjectId = task.projectId
         taskDescription = task.description
         # Push notification email on the queue if we need to notify
-        if notification.should_notify(currentUserId,task,"deleteTask",wantsNotifications):
+        if notification.should_notify(currentUserId, task, wantsNotifications):
           taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "deleteTask", 'name': taskName, 'type': taskType, 'priority': taskPriority, 'status': taskStatus, 'validation': taskValidation, 'submitterId': taskSubmitterId, 'assigneeId': taskAssigneeId, 'effort': taskEffort, 'projectId': taskProjectId, 'description': taskDescription})
         task.delete()
         self.response.set_status(204, "Deleted")
@@ -304,20 +306,22 @@ class TaskHandler(webapp.RequestHandler):
 class WatchHandler(webapp.RequestHandler):
   # Create a new watch
   def post(self):
-    watch_json = simplejson.loads(self.request.body)
-    watch = helpers.apply_json_to_model_instance(Watch(), watch_json)
-    watch.put()
-    guid = watch.key().id_or_name()
-    new_url = "/tasks-server/watch/%s" % guid
-    watch_json["id"] = guid
-    self.response.set_status(201, "Watch created")
-    self.response.headers['Location'] = new_url
-    self.response.headers['Content-Type'] = 'application/json'
-    self.response.out.write(simplejson.dumps(watch_json))
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      watch_json = simplejson.loads(self.request.body)
+      watch = helpers.apply_json_to_model_instance(Watch(), watch_json)
+      watch.put()
+      guid = watch.key().id_or_name()
+      new_url = "/tasks-server/watch/%s" % guid
+      watch_json["id"] = guid
+      self.response.set_status(201, "Watch created")
+      self.response.headers['Location'] = new_url
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(watch_json))
+    else:
+      helpers.report_unauthorized_access(self.response)
 
   # Update an existing watch with a given id
   def put(self, guid):
-    """Update the watch with the given id"""
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
       key = db.Key.from_path('Watch', int(guid))
       watch = db.get(key)
@@ -334,13 +338,16 @@ class WatchHandler(webapp.RequestHandler):
 
   # Delete a watch with a given id
   def delete(self, guid):
-    key = db.Key.from_path('Watch', int(guid))
-    watch = db.get(key)
-    if not watch == None:
-      watch.delete()
-      self.response.set_status(204, "Deleted")
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      key = db.Key.from_path('Watch', int(guid))
+      watch = db.get(key)
+      if not watch == None:
+        watch.delete()
+        self.response.set_status(204, "Deleted")
+      else:
+        helpers.report_missing_record(self.response)
     else:
-      helpers.report_missing_record(self.response)
+      helpers.report_unauthorized_access(self.response)
 
 
 # Deletes soft-deleted records more than a month old.
