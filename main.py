@@ -145,20 +145,6 @@ class UserHandler(webapp.RequestHandler):
     else:
       helpers.report_unauthorized_access(self.response)
   
-  # Delete a user with a given id
-  def delete(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      # find the matching user and delete it if found
-      key = db.Key.from_path('User', int(guid))
-      user = db.get(key)
-      if not user == None:
-        user.delete()
-        self.response.set_status(204, "Deleted")
-      else:
-        helpers.report_missing_record(self.response)
-    else:
-      helpers.report_unauthorized_access(self.response)
-
 
 class ProjectHandler(webapp.RequestHandler):
   # Create a new project
@@ -193,19 +179,6 @@ class ProjectHandler(webapp.RequestHandler):
     else:
       helpers.report_unauthorized_access(self.response)
   
-  # Delete a project with a given id
-  def delete(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      key = db.Key.from_path('Project', int(guid))
-      project = db.get(key)
-      if not project == None:
-        project.delete()
-        self.response.set_status(204, "Deleted")
-      else:
-        helpers.report_missing_record(self.response)
-    else:
-      helpers.report_unauthorized_access(self.response)
-
 
 class TaskHandler(webapp.RequestHandler):
   # Create a new task
@@ -273,36 +246,6 @@ class TaskHandler(webapp.RequestHandler):
     else:
       helpers.report_unauthorized_access(self.response)
       
-  # Delete a task with a given id
-  def delete(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      key = db.Key.from_path('Task', int(guid))
-      task = db.get(key)
-      wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
-      currentUserId = self.request.params['UUID']
-      cukey = db.Key.from_path('User', int(currentUserId))
-      if not task == None:
-        # cache current values before updates
-        taskName = task.name
-        taskType = task.type
-        taskPriority = task.priority
-        taskStatus = task.developmentStatus
-        taskValidation = task.validation
-        taskSubmitterId = task.submitterId
-        taskAssigneeId = task.assigneeId
-        taskEffort = task.effort
-        taskProjectId = task.projectId
-        taskDescription = task.description
-        # Push notification email on the queue if we need to notify
-        if notification.should_notify(currentUserId, task, wantsNotifications):
-          taskqueue.add(url='/mailer', params={'taskId': int(guid), 'currentUUID': self.request.params['UUID'], 'action': "deleteTask", 'name': taskName, 'type': taskType, 'priority': taskPriority, 'status': taskStatus, 'validation': taskValidation, 'submitterId': taskSubmitterId, 'assigneeId': taskAssigneeId, 'effort': taskEffort, 'projectId': taskProjectId, 'description': taskDescription})
-        task.delete()
-        self.response.set_status(204, "Deleted")
-      else:
-        helpers.report_missing_record(self.response)
-    else:
-      helpers.report_unauthorized_access(self.response)
-
 
 class WatchHandler(webapp.RequestHandler):
   # Create a new watch
@@ -332,19 +275,6 @@ class WatchHandler(webapp.RequestHandler):
         watch.put()
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(simplejson.dumps(watch_json))
-      else:
-        helpers.report_missing_record(self.response)
-    else:
-      helpers.report_unauthorized_access(self.response)
-
-  # Delete a watch with a given id
-  def delete(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      key = db.Key.from_path('Watch', int(guid))
-      watch = db.get(key)
-      if not watch == None:
-        watch.delete()
-        self.response.set_status(204, "Deleted")
       else:
         helpers.report_missing_record(self.response)
     else:
