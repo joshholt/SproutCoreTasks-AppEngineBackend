@@ -41,8 +41,9 @@ class RecordsHandler(webapp.RequestHandler):
       if len(self.request.params) > 0:
         lastRetrievedAt = self.request.params['lastRetrievedAt']
     
+      currentUserId = int(self.request.params['UUID'])
       if lastRetrievedAt == '':
-        users_json = helpers.build_user_list_json(User.all())
+        users_json = helpers.build_user_list_json(User.all(), currentUserId)
         tasks_json = helpers.build_task_list_json(Task.all())
         projects_json = helpers.build_project_list_json(Project.all())
         watches_json = helpers.build_watch_list_json(Watch.all())
@@ -50,7 +51,7 @@ class RecordsHandler(webapp.RequestHandler):
         q = User.all()
         q.filter('updatedAt >', int(lastRetrievedAt))
         result = q.fetch(max_results)
-        users_json = helpers.build_user_list_json(result)
+        users_json = helpers.build_user_list_json(result, currentUserId)
         q = Project.all()
         q.filter('updatedAt >', int(lastRetrievedAt))
         result = q.fetch(max_results)
@@ -370,7 +371,7 @@ class CleanupHandler(webapp.RequestHandler):
     q.filter("updatedAt <", cutoff)
     users_to_delete = q.fetch(max_results)
     db.delete(users_to_delete)
-    users_json = helpers.build_user_list_json(users_to_delete)
+    users_json = helpers.build_user_list_json(users_to_delete, None)
     
     q = Project.all()
     q.filter("status =", "deleted")
