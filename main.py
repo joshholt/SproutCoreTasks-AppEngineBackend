@@ -281,6 +281,26 @@ class WatchHandler(webapp.RequestHandler):
       helpers.report_unauthorized_access(self.response)
 
 
+# Logs off a user wiht a given id
+class LogoutHandler(webapp.RequestHandler):
+  def post(self):
+    userId = self.request.params['UUID']
+    key = db.Key.from_path('User', int(userId))
+    user = db.get(key)
+    if user != None:
+      if user.authToken == self.request.params['ATO']:
+        # clear out authentication token to indicate user was logged out
+        user.authToken = None
+        user.put()
+        self.response.set_status(200, "User logged out")
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write(simplejson.dumps({ "message": 'Logout successful'}))
+      else:
+        helpers.report_unauthorized_access(self.response)
+    else:
+      helpers.report_missing_record(self.response)
+
+
 # Deletes soft-deleted records more than a month old.
 # Example command line invocations:
 # curl -X POST http://localhost:8091/tasks-server/cleanup -d ""
@@ -341,23 +361,6 @@ class CleanupHandler(webapp.RequestHandler):
     self.response.out.write(simplejson.dumps(records_json))
     
 
-# Logs off a user wiht a given id
-class LogoutHandler(webapp.RequestHandler):
-  def post(self):
-    userId = self.request.get('id')
-    # find the matching user
-    key = db.Key.from_path('User', int(userId))
-    user = db.get(key)
-    if not user == None:
-      # clear out authentication token
-      user.authToken = None
-      user.put()
-      self.response.set_status(200, "User logged out")
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(simplejson.dumps({ "message": 'Logout successful'}))
-    else:
-      helpers.report_missing_record(self.response)
-
 
 # The Mail worker processes the mail queue
 class MailWorker(webapp.RequestHandler):
@@ -387,8 +390,8 @@ def main():
     (r'/tasks-server/task/([^\.]+)?$', TaskHandler),
     (r'/tasks-server/watch?$', WatchHandler),
     (r'/tasks-server/watch/([^\.]+)?$', WatchHandler),
-    (r'/tasks-server/cleanup', CleanupHandler),
     (r'/tasks-server/logout', LogoutHandler),
+    (r'/tasks-server/cleanup', CleanupHandler),
     (r'/mailer', MailWorker)],debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 

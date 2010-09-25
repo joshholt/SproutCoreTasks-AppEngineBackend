@@ -154,5 +154,5 @@ def report_unauthorized_access(response):
 
 def report_missing_record(response):
   """Report unauthorized access"""
-  self.response.set_status(404, "Missing Record")
-  self.response.out.write(simplejson.dumps({ "message": 'Cannot find record with given id'}))
+  response.set_status(404, "Missing Record")
+  response.out.write(simplejson.dumps({ "message": 'Cannot find record with given id'}))
