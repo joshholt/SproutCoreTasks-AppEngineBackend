@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-""" Purpose: To serve tasks & project to SG's Sproutcore Tasks application.
+""" Purpose: To provide endpoints for Tasks GUI and command-line tools.
     Author: Joshua Holt
     Author: Suvajit Gupta
 """
@@ -27,10 +27,6 @@ from models import Watch
 # Helper Imports
 import helpers, notification
 
-# Global constants
-max_results = 10000000
-month_milliseconds = 30*24*60*60*1000
-
 class RecordsHandler(webapp.RequestHandler):
   
   # Retrieve a list of all records.
@@ -50,19 +46,19 @@ class RecordsHandler(webapp.RequestHandler):
       else:
         q = User.all()
         q.filter('updatedAt >', int(lastRetrievedAt))
-        result = q.fetch(max_results)
+        result = q.fetch(helpers.MAX_RESULTS)
         users_json = helpers.build_user_list_json(result, currentUserId)
         q = Project.all()
         q.filter('updatedAt >', int(lastRetrievedAt))
-        result = q.fetch(max_results)
+        result = q.fetch(helpers.MAX_RESULTS)
         projects_json = helpers.build_project_list_json(result)
         q = Task.all()
         q.filter('updatedAt >', int(lastRetrievedAt))
-        result = q.fetch(max_results)
+        result = q.fetch(helpers.MAX_RESULTS)
         tasks_json = helpers.build_task_list_json(result)
         q = Watch.all()
         q.filter('updatedAt >', int(lastRetrievedAt))
-        result = q.fetch(max_results)
+        result = q.fetch(helpers.MAX_RESULTS)
         watches_json = helpers.build_watch_list_json(result)
     
       result = {
@@ -281,7 +277,7 @@ class WatchHandler(webapp.RequestHandler):
       helpers.report_unauthorized_access(self.response)
 
 
-# Logs off a user wiht a given id
+# Logs off a user with a given id
 class LogoutHandler(webapp.RequestHandler):
   def post(self):
     userId = self.request.params['UUID']
@@ -302,7 +298,7 @@ class LogoutHandler(webapp.RequestHandler):
 
 
 # Deletes soft-deleted records more than a month old.
-# Example command line invocations:
+# Example command line invocations (first one cleans up more than month-old soft-deleted data, second one for soft-deleted data older than specified time):
 # curl -X POST http://localhost:8091/tasks-server/cleanup -d ""
 # curl -X POST http://localhost:8091/tasks-server/cleanup -d "cutoff=1282279058109"
 class CleanupHandler(webapp.RequestHandler):
@@ -312,37 +308,14 @@ class CleanupHandler(webapp.RequestHandler):
     if len(self.request.params) > 0:
       cutoff = self.request.params['cutoff']
     if cutoff == '':
-      cutoff = int(time.time()*1000) - month_milliseconds
+      cutoff = int(time.time()*1000) - helpers.MONTH_MILLISECONDS
     else:
       cutoff = int(cutoff)
     
-    q = User.all()
-    q.filter("status =", "deleted")
-    q.filter("updatedAt <", cutoff)
-    users_to_delete = q.fetch(max_results)
-    db.delete(users_to_delete)
-    users_json = helpers.build_user_list_json(users_to_delete, None)
-    
-    q = Project.all()
-    q.filter("status =", "deleted")
-    q.filter("updatedAt <", cutoff)
-    projects_to_delete = q.fetch(max_results)
-    db.delete(projects_to_delete)
-    projects_json = helpers.build_project_list_json(projects_to_delete)
-    
-    q = Task.all()
-    q.filter("status =", "deleted")
-    q.filter("updatedAt <", cutoff)
-    tasks_to_delete = q.fetch(max_results)
-    db.delete(tasks_to_delete)
-    tasks_json = helpers.build_task_list_json(tasks_to_delete)
-    
-    q = Watch.all()
-    q.filter("status =", "deleted")
-    q.filter("updatedAt <", cutoff)
-    watches_to_delete = q.fetch(max_results)
-    db.delete(watches_to_delete)
-    watches_json = helpers.build_watch_list_json(watches_to_delete)
+    users_json = helpers.build_user_list_json(helpers.purge_soft_deleted_records(User.all(), cutoff), None)
+    projects_json = helpers.build_project_list_json(helpers.purge_soft_deleted_records(Project.all(), cutoff))
+    tasks_json = helpers.build_task_list_json(helpers.purge_soft_deleted_records(Task.all(), cutoff))
+    watches_json = helpers.build_watch_list_json(helpers.purge_soft_deleted_records(Watch.all(), cutoff))
     
     result = {
      "cutoff": cutoff,

@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-""" Prupose: To Send Notifications based on certain task conditions.
+""" Purpose: To send notifications to task watchers.
     Author: Joshua Holt
-    Date: 12-09-2009
-    Last Modified: 02-14-2010
+    Author: Suvajit Gupta
 """
 import time,datetime
 #from google.appengine.api import xmpp # importing this lib allows jabber chat messages to be sent.

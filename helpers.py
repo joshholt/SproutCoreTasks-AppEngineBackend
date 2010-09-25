@@ -1,7 +1,6 @@
 """ This module provdes helpers.
   Author: Joshua Holt 
-  Date: 09-30-2009
-  Last Modified: 02-14-2010
+  Author: Suvajit Gupta 
 """
 
 import time,datetime,hashlib,models
@@ -9,6 +8,17 @@ from google.appengine.ext import db
 from models import User, Task, Project
 from django.utils import simplejson
 
+# Global constants
+MAX_RESULTS = 10000000
+MONTH_MILLISECONDS = 30*24*60*60*1000
+
+def purge_soft_deleted_records(list, cutoff):
+  list.filter("status =", "deleted")
+  list.filter("updatedAt <", cutoff)
+  records_to_delete = list.fetch(MAX_RESULTS)
+  db.delete(records_to_delete)
+  return records_to_delete
+  
 #-----------------------------------------------------------------------------
 # GENERAL JSON HELPERS
 #-----------------------------------------------------------------------------
@@ -58,10 +68,10 @@ def build_user_json(user, send_auth_token):
 def build_user_list_json(list, current_user_id):
   users_json = []
   for user in list:
-    if current_user_id != None:
-      send_auth_token = True if user.key().id_or_name() == current_user_id else False
+    send_auth_token = False;
+    if current_user_id != None and user.key().id_or_name() == current_user_id:
+      send_auth_token = True
     users_json.append(build_user_json(user, send_auth_token))
-    
   return users_json
 
 def build_task_list_json(list):
@@ -78,7 +88,6 @@ def build_task_list_json(list):
       "createdAt": task.createdAt,
       "updatedAt": task.updatedAt
     }
-    
     tasks_json.append(task_json)
   return tasks_json
 
@@ -96,7 +105,6 @@ def build_project_list_json(list):
       "createdAt": project.createdAt,
       "updatedAt": project.updatedAt
     }
-    
     projects_json.append(project_json)
   return projects_json
 
@@ -111,7 +119,6 @@ def build_watch_list_json(list):
       "createdAt": watch.createdAt,
       "updatedAt": watch.updatedAt
     }
-    
     watches_json.append(watch_json)
   return watches_json
 

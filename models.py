@@ -1,7 +1,6 @@
-""" This File holds the model definitions used in this app.
-  Author: Joshua Holt 
-  Date: 09-30-2009
-  Last Modified: 12-08-2009
+""" Purpose: To define model objects used by server.
+  Author: Joshua Holt
+  Author: Suvajit Gupta
 """
 
 from google.appengine.ext import db
