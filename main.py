@@ -67,7 +67,6 @@ class RecordsHandler(webapp.RequestHandler):
        "tasks": tasks_json,
        "watches": watches_json
       }
-    
       records_json = {
         "result": result
       }
@@ -298,41 +297,40 @@ class LogoutHandler(webapp.RequestHandler):
 
 
 # Deletes soft-deleted records more than a month old.
-# Example command line invocations (first one cleans up more than month-old soft-deleted data, second one for soft-deleted data older than specified time):
-# curl -X POST http://localhost:8091/tasks-server/cleanup -d ""
-# curl -X POST http://localhost:8091/tasks-server/cleanup -d "cutoff=1282279058109"
+# Example command line invocation that cleans up more than month-old soft-deleted data:
+# curl -X POST http://localhost:8091/tasks-server/cleanup\?UUID=1\&ATO=0c69bf928aa2157e4a461567632afc9ecf18c010 -d ""
 class CleanupHandler(webapp.RequestHandler):
   def post(self):
-    cutoff = ''
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], "cleanup"):
+      cutoff = self.request.get('cutoff')
+      if cutoff == None or cutoff == '':
+        # default to a cutoff time a month ago
+        cutoff = int(time.time()*1000) - helpers.MONTH_MILLISECONDS
+      else:
+        cutoff = int(cutoff)
     
-    if len(self.request.params) > 0:
-      cutoff = self.request.params['cutoff']
-    if cutoff == '':
-      cutoff = int(time.time()*1000) - helpers.MONTH_MILLISECONDS
+      users_json = helpers.build_user_list_json(helpers.purge_soft_deleted_records(User.all(), cutoff), None)
+      projects_json = helpers.build_project_list_json(helpers.purge_soft_deleted_records(Project.all(), cutoff))
+      tasks_json = helpers.build_task_list_json(helpers.purge_soft_deleted_records(Task.all(), cutoff))
+      watches_json = helpers.build_watch_list_json(helpers.purge_soft_deleted_records(Watch.all(), cutoff))
+    
+      result = {
+       "cutoff": cutoff,
+       "usersDeleted": users_json,
+       "projectsDeleted": projects_json,
+       "tasksDeleted": tasks_json,
+       "watchesDeleted": watches_json
+      }
+      records_json = {
+        "result": result
+      }
+  
+      self.response.set_status(200, "Cleanup done")
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(records_json))
+    
     else:
-      cutoff = int(cutoff)
-    
-    users_json = helpers.build_user_list_json(helpers.purge_soft_deleted_records(User.all(), cutoff), None)
-    projects_json = helpers.build_project_list_json(helpers.purge_soft_deleted_records(Project.all(), cutoff))
-    tasks_json = helpers.build_task_list_json(helpers.purge_soft_deleted_records(Task.all(), cutoff))
-    watches_json = helpers.build_watch_list_json(helpers.purge_soft_deleted_records(Watch.all(), cutoff))
-    
-    result = {
-     "cutoff": cutoff,
-     "usersDeleted": users_json,
-     "projectsDeleted": projects_json,
-     "tasksDeleted": tasks_json,
-     "watchesDeleted": watches_json
-    }
-  
-    records_json = {
-      "result": result
-    }
-  
-    self.response.set_status(200, "Data Cleaned Out")
-    self.response.headers['Content-Type'] = 'application/json'
-    self.response.out.write(simplejson.dumps(records_json))
-    
+      helpers.report_unauthorized_access(self.response)
 
 
 # The Mail worker processes the mail queue

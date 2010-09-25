@@ -146,7 +146,8 @@ def authorized(userId, authToken, action):
       "createUser": lambda role: True if role == "_Manager" else False,
       "createWatch": lambda role: True if not role == "None" else False,
       "updateWatch": lambda role: True if not role == "None" else False,
-      "deleteWatch": lambda role: True if not role == "None" else False
+      "deleteWatch": lambda role: True if not role == "None" else False,
+      "cleanup": lambda role: True if role == "_Manager" else False
       }[action](str(user.role))
     else:
       retVal = False
