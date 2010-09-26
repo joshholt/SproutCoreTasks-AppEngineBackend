@@ -296,16 +296,21 @@ class LogoutHandler(webapp.RequestHandler):
       helpers.report_missing_record(self.response)
 
 
-# Deletes soft-deleted records more than a month old.
+# Delete soft-deleted items and handle IDs referencing non-existent records
 # Example command line invocation that cleans up more than month-old soft-deleted data:
 # curl -X POST http://localhost:8091/tasks-server/cleanup\?UUID=1\&ATO=0c69bf928aa2157e4a461567632afc9ecf18c010 -d ""
 class CleanupHandler(webapp.RequestHandler):
   def post(self):
+
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], "cleanup"):
+      
+      now = int(time.time()*1000)
+      
+      # Delete soft-deleted records older than timestamp (if specified) or older than a month
       cutoff = self.request.get('cutoff')
       if cutoff == None or cutoff == '':
         # default to a cutoff time a month ago
-        cutoff = int(time.time()*1000) - helpers.MONTH_MILLISECONDS
+        cutoff = now - helpers.MONTH_MILLISECONDS
       else:
         cutoff = int(cutoff)
     
@@ -314,12 +319,82 @@ class CleanupHandler(webapp.RequestHandler):
       tasks_json = helpers.build_task_list_json(helpers.purge_soft_deleted_records(Task.all(), cutoff))
       watches_json = helpers.build_watch_list_json(helpers.purge_soft_deleted_records(Watch.all(), cutoff))
     
+      # Handle IDs referencing non-existent records:
+      # * non-existent task projectId/submitterId/assigneeId should be set to null
+      # * watches with non-existent taskId/watchId should be soft-deleted
+      # * set updatedAt for all records being modified
+      user_ids = helpers.extract_record_ids(User.all())
+      project_ids = helpers.extract_record_ids(Project.all())
+      tasks = Task.all()
+      task_ids = helpers.extract_record_ids(tasks)
+      tasks_updated = []
+      for task in tasks:
+        updated = False
+        project_id = task.projectId
+        if project_id != None and project_id != '':
+          try:
+            idx = project_ids.index(project_id)
+          except:
+            idx = -1
+          if idx == -1:
+            task.projectId = None
+            updated = True
+        submitter_id = task.submitterId
+        if submitter_id != None and submitter_id != '':
+          try:
+            idx = user_ids.index(submitter_id)
+          except:
+            idx = -1
+          if idx == -1:
+            task.submitterId = None
+            updated = True
+        assignee_id = task.assigneeId
+        if assignee_id != None and assignee_id != '':
+          try:
+            idx = user_ids.index(assignee_id)
+          except:
+            idx = -1
+          if idx == -1:
+            task.assigneeId = None
+            updated = True
+        if updated:
+          task.updatedAt = now
+          task.put()
+          tasks_updated.append(task)
+      tasks_updated_json = helpers.build_task_list_json(tasks_updated)
+          
+      watches = Watch.all()
+      watches_soft_deleted = []
+      for watch in watches:
+        if watch.status != 'deleted':
+          task_id = watch.taskId
+          if task_id != None and task_id != '':
+            try:
+              task_idx = task_ids.index(task_id)
+            except:
+              task_idx = -1
+          user_id = watch.userId
+          if user_id != None and user_id != '':
+            try:
+              user_idx = user_ids.index(user_id)
+            except:
+              user_idx = -1
+          if task_idx == -1 or user_idx == -1:
+            watch.status = 'deleted'
+            watch.updatedAt = now
+            watch.put()
+            watches_soft_deleted.append(watch)
+      watches_soft_deleted_json = helpers.build_watch_list_json(watches_soft_deleted)
+          
+      # Return all affected records broken down by category
       result = {
        "cutoff": cutoff,
        "usersDeleted": users_json,
        "projectsDeleted": projects_json,
        "tasksDeleted": tasks_json,
-       "watchesDeleted": watches_json
+       "watchesDeleted": watches_json,
+       "tasksUpdated": tasks_updated_json,
+       "watchesSoftDeleted": watches_soft_deleted_json
       }
       records_json = {
         "result": result

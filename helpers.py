@@ -18,6 +18,13 @@ def purge_soft_deleted_records(list, cutoff):
   records_to_delete = list.fetch(MAX_RESULTS)
   db.delete(records_to_delete)
   return records_to_delete
+
+def extract_record_ids(list):
+  record_ids = []
+  for record in list:
+    if record.status != 'deleted':
+      record_ids.append(record.key().id_or_name())
+  return record_ids
   
 #-----------------------------------------------------------------------------
 # GENERAL JSON HELPERS
@@ -26,7 +33,6 @@ def apply_json_to_model_instance(model, jobj):
   """This is the generic method to apply the given json to the given model"""
   for key in model.properties():
     setattr(model, key, jobj[key] if jobj.has_key(key) else None)
-  
   return model  
 
 def generate_auth_token():
@@ -74,23 +80,6 @@ def build_user_list_json(list, current_user_id):
     users_json.append(build_user_json(user, send_auth_token))
   return users_json
 
-def build_task_list_json(list):
-  tasks_json = []
-  for task in list:
-    task_json = {
-      "id": "%s" % task.key().id_or_name(),
-      "name": task.name, "priority": task.priority,
-      "projectId": task.projectId,
-      "effort": task.effort, "submitterId": task.submitterId,
-      "assigneeId": task.assigneeId, "type": task.type, "developmentStatus": task.developmentStatus,
-      "validation": task.validation, "description": task.description,
-      "status": task.status, 
-      "createdAt": task.createdAt,
-      "updatedAt": task.updatedAt
-    }
-    tasks_json.append(task_json)
-  return tasks_json
-
 def build_project_list_json(list):
   projects_json = []
   for project in list:
@@ -107,6 +96,23 @@ def build_project_list_json(list):
     }
     projects_json.append(project_json)
   return projects_json
+
+def build_task_list_json(list):
+  tasks_json = []
+  for task in list:
+    task_json = {
+      "id": "%s" % task.key().id_or_name(),
+      "name": task.name, "priority": task.priority,
+      "projectId": task.projectId,
+      "effort": task.effort, "submitterId": task.submitterId,
+      "assigneeId": task.assigneeId, "type": task.type, "developmentStatus": task.developmentStatus,
+      "validation": task.validation, "description": task.description,
+      "status": task.status, 
+      "createdAt": task.createdAt,
+      "updatedAt": task.updatedAt
+    }
+    tasks_json.append(task_json)
+  return tasks_json
 
 def build_watch_list_json(list):
   watches_json = []
