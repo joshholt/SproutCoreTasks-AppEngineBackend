@@ -80,27 +80,24 @@ class RecordsHandler(webapp.RequestHandler):
 
 class UserHandler(webapp.RequestHandler):
   
+  # If only loginName is provided as parameter: If specified loginName exists, return user information
+  # If valid password is also passed as parameter: Authenticate user and return authToken as well
   def get(self):
     users_json = []
-    param_count = len(self.request.params)
     self.response.headers['Content-Type'] = 'application/json'
-    if param_count > 0:
-      loginName = self.request.params['loginName'].strip().replace("\'","")
+    param_count = len(self.request.params)
+    if param_count == 1 or param_count == 2:
       q = User.all()
-      q.filter('loginName =', loginName)
+      q.filter('loginName =', self.request.params['loginName'].strip().replace("\'",""))
       result = q.fetch(1)
-      result_count = len(result)
-    # Check if a specified loginName is available
-    if param_count == 1:
-      self.response.out.write(simplejson.dumps({ "loginNameAvailable": "yes" if result_count == 0 else "no"}))
-    # Login a user given loginName and password
-    elif param_count == 2:
-      password = self.request.params['password'].strip().replace("\'","")
-      if result_count != 0:
-        if result[0].password == None or result[0].password == password:
-          result[0].authToken = helpers.generate_auth_token()
-          result[0].put()
-          users_json = [ helpers.build_user_json(result[0], True) ]
+      if len(result) == 1:
+        if param_count == 1:
+          users_json = [ helpers.build_user_json(result[0], False) ]
+        elif param_count == 2:
+          if result[0].password == None or result[0].password == self.request.params['password'].strip().replace("\'",""):
+            result[0].authToken = helpers.generate_auth_token()
+            result[0].put()
+            users_json = [ helpers.build_user_json(result[0], True) ]
       self.response.out.write(simplejson.dumps(users_json))
     else:
       self.response.set_status(401, "Invalid parameters")
