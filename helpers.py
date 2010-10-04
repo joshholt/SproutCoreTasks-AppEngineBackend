@@ -39,20 +39,33 @@ def generate_auth_token():
   """This method generates the authToken for a user every time they login"""
   return hashlib.sha1("This--is--the--authToken--%s" % time.mktime(datetime.datetime.utcnow().timetuple())).hexdigest()
 
+def is_login_name_valid(login_name):
+  if login_name.lower() == 'none':
+    return False;
+  q = User.all()
+  q.filter('loginName =', login_name.strip().replace("\'",""))
+  result = q.fetch(1)
+  if len(result) == 1:
+    return False;
+  return True;
+
 def create_user(request, response, signup):
-  user_json = simplejson.loads(request.body)
-  user = apply_json_to_model_instance(User(), user_json)
-  if signup:
-    user.role = "_Guest"
-    user.authToken = generate_auth_token()
-  user.put()
-  guid = user.key().id_or_name()
-  new_url = "/tasks-server/user/%s" % guid
-  user_json["id"] = guid
-  response.set_status(201, "User created")
-  response.headers['Location'] = new_url
   response.headers['Content-Type'] = 'application/json'
-  response.out.write(simplejson.dumps(user_json))
+  user_json = simplejson.loads(request.body)
+  if is_login_name_valid(user_json['loginName']):
+    user = apply_json_to_model_instance(User(), user_json)
+    if signup:
+      user.role = "_Guest"
+      user.authToken = generate_auth_token()
+    user.put()
+    guid = user.key().id_or_name()
+    new_url = "/tasks-server/user/%s" % guid
+    user_json["id"] = guid
+    response.set_status(201, "User created")
+    response.headers['Location'] = new_url
+    response.out.write(simplejson.dumps(user_json))
+  else:
+    report_invalid_login_name(response)
 
 def build_user_json(user, send_auth_token):
   user_json = {
@@ -162,11 +175,13 @@ def authorized(userId, authToken, action):
   return retVal
 
 def report_unauthorized_access(response):
-  """Report unauthorized access"""
   response.set_status(401, "Unauthorized")
   response.out.write(simplejson.dumps({ "message": 'Access denied'}))
 
 def report_missing_record(response):
-  """Report unauthorized access"""
   response.set_status(404, "Missing Record")
   response.out.write(simplejson.dumps({ "message": 'Cannot find record with given id'}))
+
+def report_invalid_login_name(response):
+  response.set_status(401, "Invalid login name")
+  response.out.write(simplejson.dumps({ "message": 'This loginName is reserved or in use'}))

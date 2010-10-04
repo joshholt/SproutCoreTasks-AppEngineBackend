@@ -121,17 +121,20 @@ class UserHandler(webapp.RequestHandler):
       user = db.get(key)
       if not user == None:
         user_json = simplejson.loads(self.request.body)
-        # Prevent non-Managers from changing their role
-        currentUserId = self.request.params['UUID']
-        cukey = db.Key.from_path('User', int(currentUserId))
-        cuser = db.get(cukey)
-        if str(user.role) != user_json['role'] and str(cuser.role) != "_Manager":
-          user_json['role'] = str(user.role)
-          helpers.report_unauthorized_access(self.response)
-        user = helpers.apply_json_to_model_instance(user, user_json)
-        user.put()
-        self.response.headers['Content-Type'] = 'application/json'
-        self.response.out.write(simplejson.dumps(user_json))
+        if helpers.is_login_name_valid(user_json['loginName']):
+          # Prevent non-Managers from changing their role
+          currentUserId = self.request.params['UUID']
+          cukey = db.Key.from_path('User', int(currentUserId))
+          cuser = db.get(cukey)
+          if str(user.role) != user_json['role'] and str(cuser.role) != "_Manager":
+            user_json['role'] = str(user.role)
+            helpers.report_unauthorized_access(self.response)
+          user = helpers.apply_json_to_model_instance(user, user_json)
+          user.put()
+          self.response.headers['Content-Type'] = 'application/json'
+          self.response.out.write(simplejson.dumps(user_json))
+        else:
+          helpers.report_invalid_login_name(self.response)
       else:
         helpers.report_missing_record(self.response)
     else:
