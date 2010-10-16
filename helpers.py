@@ -39,20 +39,23 @@ def generate_auth_token():
   """This method generates the authToken for a user every time they login"""
   return hashlib.sha1("This--is--the--authToken--%s" % time.mktime(datetime.datetime.utcnow().timetuple())).hexdigest()
 
-def is_login_name_valid(login_name):
+def is_login_name_valid(login_name, current_user):
   if login_name.lower() == 'none':
     return False;
-  q = User.all()
-  q.filter('loginName =', login_name.strip().replace("\'",""))
-  result = q.fetch(1)
-  if len(result) == 1:
-    return False;
+  login_name = login_name.strip().replace("\'","")
+  current_user_id = None
+  if current_user != None:
+    current_user_id = current_user.key().id_or_name()
+  users = User.all()
+  for user in users:
+    if user.key().id_or_name() != current_user_id and user.loginName == login_name:
+      return False;
   return True;
 
 def create_user(request, response, signup):
   response.headers['Content-Type'] = 'application/json'
   user_json = simplejson.loads(request.body)
-  if is_login_name_valid(user_json['loginName']):
+  if is_login_name_valid(user_json['loginName'], None):
     user = apply_json_to_model_instance(User(), user_json)
     if signup:
       user.role = "_Guest"

@@ -121,7 +121,9 @@ class UserHandler(webapp.RequestHandler):
       user = db.get(key)
       if not user == None:
         user_json = simplejson.loads(self.request.body)
-        if helpers.is_login_name_valid(user_json['loginName']):
+        status = user_json.get('status')
+        being_deleted = (status != None and status == 'deleted')
+        if being_deleted or helpers.is_login_name_valid(user_json['loginName'], user):
           # Prevent non-Managers from changing their role
           currentUserId = self.request.params['UUID']
           cukey = db.Key.from_path('User', int(currentUserId))
