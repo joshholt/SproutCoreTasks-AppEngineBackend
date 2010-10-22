@@ -100,7 +100,7 @@ class UserHandler(webapp.RequestHandler):
             users_json = [ helpers.build_user_json(result[0], True) ]
       self.response.out.write(simplejson.dumps(users_json))
     else:
-      self.response.set_status(401, "Invalid parameters")
+      self.response.set_status(400, "Invalid parameters")
       self.response.out.write(simplejson.dumps({ "message": 'Need 1 or 2 parameters for this call'}))
   
   def post(self):

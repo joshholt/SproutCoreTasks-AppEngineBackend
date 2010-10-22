@@ -157,6 +157,7 @@ def authorized(userId, authToken, action):
     if user.authToken == authToken:
       retVal = {
       "getRecords": lambda role: True if not role == "None" else False,
+      "createUser": lambda role: True if role == "_Manager" else False,
       "updateUser": lambda role: True if not role == "None" else False,
       "deleteUser": lambda role: True if role == "_Manager" else False,
       "createProject": lambda role: True if role == "_Manager" else False,
@@ -165,7 +166,6 @@ def authorized(userId, authToken, action):
       "createTask": lambda role: True if not role == "None" else False,
       "updateTask": lambda role: True if not role == "None" else False,
       "deleteTask": lambda role: True if not role == "None" else False,
-      "createUser": lambda role: True if role == "_Manager" else False,
       "createWatch": lambda role: True if not role == "None" else False,
       "updateWatch": lambda role: True if not role == "None" else False,
       "deleteWatch": lambda role: True if not role == "None" else False,
@@ -186,5 +186,5 @@ def report_missing_record(response):
   response.out.write(simplejson.dumps({ "message": 'Cannot find record with given id'}))
 
 def report_invalid_login_name(response):
-  response.set_status(401, "Invalid login name")
+  response.set_status(409, "Invalid login name")
   response.out.write(simplejson.dumps({ "message": 'This loginName is reserved or in use'}))
