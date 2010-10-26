@@ -51,7 +51,7 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
   for watcherId in watcherIds:
     watcher_key = db.Key.from_path('User', int(watcherId))
     watcher = db.get(watcher_key)
-    if(watcher.email != None and watcher.email != '' and watcher.email != 'None'):
+    if(watcher != None and watcher.email != None and watcher.email != '' and watcher.email != 'None'):
       watcherEmails.append(watcher.email)
       
   # create list of emails for watchers
