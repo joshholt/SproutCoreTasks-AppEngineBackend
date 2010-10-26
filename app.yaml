@@ -28,10 +28,10 @@ handlers:
   static_dir: static
   
 - url: /mailtest
-  script: main.python
+  script: main.py
 
 - url: /mailer
-  script: main.python
+  script: main.py
 
 - url: /tasks
   static_dir: static/tasks
