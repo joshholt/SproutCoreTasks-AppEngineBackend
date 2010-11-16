@@ -55,3 +55,13 @@ class Watch(db.Model):
   createdAt = db.IntegerProperty(required=False)
   updatedAt = db.IntegerProperty(required=False)
   status = db.StringProperty(required=False)
+
+
+class Comment(db.Model):
+  """ This is the Watch Model"""
+  description = db.TextProperty(required=False)
+  taskId = db.IntegerProperty(required=False)
+  userId = db.IntegerProperty(required=False)
+  createdAt = db.IntegerProperty(required=False)
+  updatedAt = db.IntegerProperty(required=False)
+  status = db.StringProperty(required=False)

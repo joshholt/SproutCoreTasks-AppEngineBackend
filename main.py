@@ -23,6 +23,7 @@ from models import User
 from models import Task
 from models import Project
 from models import Watch
+from models import Comment
 
 # Helper Imports
 import helpers, notification
@@ -39,10 +40,26 @@ class RecordsHandler(webapp.RequestHandler):
     
       currentUserId = int(self.request.params['UUID'])
       if lastRetrievedAt == '':
-        users_json = helpers.build_user_list_json(User.all(), currentUserId)
-        tasks_json = helpers.build_task_list_json(Task.all())
-        projects_json = helpers.build_project_list_json(Project.all())
-        watches_json = helpers.build_watch_list_json(Watch.all())
+        q = User.all()
+        q.filter('status != ', 'deleted')
+        result = q.fetch(helpers.MAX_RESULTS)
+        users_json = helpers.build_user_list_json(result, currentUserId)
+        q = Project.all()
+        q.filter('status != ', 'deleted')
+        result = q.fetch(helpers.MAX_RESULTS)
+        projects_json = helpers.build_project_list_json(result)
+        q = Task.all()
+        q.filter('status != ', 'deleted')
+        result = q.fetch(helpers.MAX_RESULTS)
+        tasks_json = helpers.build_task_list_json(result)
+        q = Watch.all()
+        q.filter('status != ', 'deleted')
+        result = q.fetch(helpers.MAX_RESULTS)
+        watches_json = helpers.build_watch_list_json(result)
+        q = Comment.all()
+        q.filter('status != ', 'deleted')
+        result = q.fetch(helpers.MAX_RESULTS)
+        comments_json = helpers.build_comment_list_json(result)
       else:
         q = User.all()
         q.filter('updatedAt >', int(lastRetrievedAt))
@@ -60,12 +77,17 @@ class RecordsHandler(webapp.RequestHandler):
         q.filter('updatedAt >', int(lastRetrievedAt))
         result = q.fetch(helpers.MAX_RESULTS)
         watches_json = helpers.build_watch_list_json(result)
+        q = Comment.all()
+        q.filter('updatedAt >', int(lastRetrievedAt))
+        result = q.fetch(helpers.MAX_RESULTS)
+        comments_json = helpers.build_comment_list_json(result)
     
       result = {
        "users": users_json,
        "projects": projects_json,
        "tasks": tasks_json,
-       "watches": watches_json
+       "watches": watches_json,
+       "comments": comments_json
       }
       records_json = {
         "result": result
@@ -278,6 +300,40 @@ class WatchHandler(webapp.RequestHandler):
       helpers.report_unauthorized_access(self.response)
 
 
+class CommentHandler(webapp.RequestHandler):
+  # Create a new comment
+  def post(self):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      comment_json = simplejson.loads(self.request.body)
+      comment = helpers.apply_json_to_model_instance(Comment(), comment_json)
+      comment.save()
+      guid = comment.key().id_or_name()
+      new_url = "/tasks-server/comment/%s" % guid
+      comment_json["id"] = guid
+      self.response.set_status(201, "Comment created")
+      self.response.headers['Location'] = new_url
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.out.write(simplejson.dumps(comment_json))
+    else:
+      helpers.report_unauthorized_access(self.response)
+
+  # Update an existing comment with a given id
+  def put(self, guid):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      key = db.Key.from_path('Comment', int(guid))
+      comment = db.get(key)
+      if not comment == None:
+        comment_json = simplejson.loads(self.request.body)
+        comment = helpers.apply_json_to_model_instance(comment, comment_json)
+        comment.put()
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write(simplejson.dumps(comment_json))
+      else:
+        helpers.report_missing_record(self.response)
+    else:
+      helpers.report_unauthorized_access(self.response)
+
+
 # Logs off a user with a given id
 class LogoutHandler(webapp.RequestHandler):
   def post(self):
@@ -300,7 +356,7 @@ class LogoutHandler(webapp.RequestHandler):
 
 # Delete soft-deleted items and handle IDs referencing non-existent records
 # Example command line invocation that cleans up more than month-old soft-deleted data:
-# curl -X POST http://localhost:8091/tasks-server/cleanup\?UUID=1\&ATO=0c69bf928aa2157e4a461567632afc9ecf18c010 -d ""
+# curl -X POST http://localhost:8091/tasks-server/cleanup\?UUID=1\&ATO=0c69bf928aa2157e4a461567632afc9ecf18c010\&cutoff=12873252422859
 class CleanupHandler(webapp.RequestHandler):
   def post(self):
 
@@ -309,7 +365,7 @@ class CleanupHandler(webapp.RequestHandler):
       now = int(time.time()*1000)
       
       # Delete soft-deleted records older than timestamp (if specified) or older than a month
-      cutoff = self.request.get('cutoff')
+      cutoff = self.request.params['cutoff']
       if cutoff == None or cutoff == '':
         # default to a cutoff time a month ago
         cutoff = now - helpers.MONTH_MILLISECONDS
@@ -320,6 +376,7 @@ class CleanupHandler(webapp.RequestHandler):
       projects_json = helpers.build_project_list_json(helpers.purge_soft_deleted_records(Project.all(), cutoff))
       tasks_json = helpers.build_task_list_json(helpers.purge_soft_deleted_records(Task.all(), cutoff))
       watches_json = helpers.build_watch_list_json(helpers.purge_soft_deleted_records(Watch.all(), cutoff))
+      comments_json = helpers.build_comment_list_json(helpers.purge_soft_deleted_records(Comment.all(), cutoff))
     
       # Handle IDs referencing non-existent records:
       # * non-existent task projectId/submitterId/assigneeId should be set to null
@@ -388,6 +445,29 @@ class CleanupHandler(webapp.RequestHandler):
             watches_soft_deleted.append(watch)
       watches_soft_deleted_json = helpers.build_watch_list_json(watches_soft_deleted)
           
+      comments = Comment.all()
+      comments_soft_deleted = []
+      for comment in comments:
+        if comment.status != 'deleted':
+          task_id = comment.taskId
+          if task_id != None and task_id != '':
+            try:
+              task_idx = task_ids.index(task_id)
+            except:
+              task_idx = -1
+          user_id = comment.userId
+          if user_id != None and user_id != '':
+            try:
+              user_idx = user_ids.index(user_id)
+            except:
+              user_idx = -1
+          if task_idx == -1 or user_idx == -1:
+            comment.status = 'deleted'
+            comment.updatedAt = now
+            comment.put()
+            comments_soft_deleted.append(comment)
+      comments_soft_deleted_json = helpers.build_comment_list_json(comments_soft_deleted)
+          
       # Return all affected records broken down by category
       result = {
        "cutoff": cutoff,
@@ -395,8 +475,10 @@ class CleanupHandler(webapp.RequestHandler):
        "projectsDeleted": projects_json,
        "tasksDeleted": tasks_json,
        "watchesDeleted": watches_json,
+       "comentsDeleted": comments_json,
        "tasksUpdated": tasks_updated_json,
-       "watchesSoftDeleted": watches_soft_deleted_json
+       "watchesSoftDeleted": watches_soft_deleted_json,
+       "commentsSoftDeleted": comments_soft_deleted_json
       }
       records_json = {
         "result": result
@@ -438,6 +520,8 @@ def main():
     (r'/tasks-server/task/([^\.]+)?$', TaskHandler),
     (r'/tasks-server/watch?$', WatchHandler),
     (r'/tasks-server/watch/([^\.]+)?$', WatchHandler),
+    (r'/tasks-server/comment?$', CommentHandler),
+    (r'/tasks-server/comment/([^\.]+)?$', CommentHandler),
     (r'/tasks-server/logout', LogoutHandler),
     (r'/tasks-server/cleanup', CleanupHandler),
     (r'/mailer', MailWorker)],debug=True)

@@ -5,7 +5,7 @@
 
 import time,datetime,hashlib,models
 from google.appengine.ext import db
-from models import User, Task, Project
+from models import User, Task, Project, Watch, Comment
 from django.utils import simplejson
 
 # Global constants
@@ -118,11 +118,16 @@ def build_task_list_json(list):
   for task in list:
     task_json = {
       "id": "%s" % task.key().id_or_name(),
-      "name": task.name, "priority": task.priority,
+      "name": task.name,
+      "priority": task.priority,
+      "description": task.description,
       "projectId": task.projectId,
-      "effort": task.effort, "submitterId": task.submitterId,
-      "assigneeId": task.assigneeId, "type": task.type, "developmentStatus": task.developmentStatus,
-      "validation": task.validation, "description": task.description,
+      "effort": task.effort,
+      "submitterId": task.submitterId,
+      "assigneeId": task.assigneeId,
+      "type": task.type, 
+      "developmentStatus": task.developmentStatus,
+      "validation": task.validation,
       "status": task.status, 
       "createdAt": task.createdAt,
       "updatedAt": task.updatedAt
@@ -143,6 +148,21 @@ def build_watch_list_json(list):
     }
     watches_json.append(watch_json)
   return watches_json
+
+def build_comment_list_json(list):
+  comments_json = []
+  for comment in list:
+    comment_json = {
+      "id": "%s" % comment.key().id_or_name(),
+      "description": comment.description,
+      "taskId": comment.taskId,
+      "userId": comment.userId,
+      "status": comment.status, 
+      "createdAt": comment.createdAt,
+      "updatedAt": comment.updatedAt
+    }
+    comments_json.append(comment_json)
+  return comments_json
 
 #-----------------------------------------------------------------------------
 # AUTHORIZATION
@@ -169,6 +189,9 @@ def authorized(userId, authToken, action):
       "createWatch": lambda role: True if not role == "None" else False,
       "updateWatch": lambda role: True if not role == "None" else False,
       "deleteWatch": lambda role: True if not role == "None" else False,
+      "createComment": lambda role: True if not role == "None" else False,
+      "updateComment": lambda role: True if not role == "None" else False,
+      "deleteComment": lambda role: True if not role == "None" else False,
       "cleanup": lambda role: True if role == "_Manager" else False
       }[action](str(user.role))
     else:
