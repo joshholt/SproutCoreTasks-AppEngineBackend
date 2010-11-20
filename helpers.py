@@ -25,6 +25,13 @@ def extract_record_ids(list):
     if record.status != 'deleted':
       record_ids.append(record.key().id_or_name())
   return record_ids
+
+def extract_non_deleted_records(list):
+  records = []
+  for record in list:
+    if record.status != 'deleted':
+      records.append(record)
+  return records
   
 #-----------------------------------------------------------------------------
 # GENERAL JSON HELPERS
@@ -48,7 +55,7 @@ def is_login_name_valid(login_name, current_user):
     current_user_id = current_user.key().id_or_name()
   users = User.all()
   for user in users:
-    if user.status != 'deleted' and user.key().id_or_name() != current_user_id and user.loginName == login_name:
+    if user.key().id_or_name() != current_user_id and user.loginName == login_name:
       return False;
   return True;
 
