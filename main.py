@@ -341,9 +341,9 @@ class LogoutHandler(webapp.RequestHandler):
 
 # Delete soft-deleted items and handle IDs referencing non-existent records
 # Example command line invocation that cleans up more than month-old soft-deleted data:
-# curl -X POST http://localhost:8091/tasks-server/cleanup\?UUID=1\&ATO=0c69bf928aa2157e4a461567632afc9ecf18c010\&cutoff=12873252422859
+# curl http://tasks-demo.appspot.com/tasks-server/cleanup\?UUID=10206\&ATO=87bbeaa756aedc28e3b31b27257bc9e6d63cea3d\&cutoff=1290302943001
 class CleanupHandler(webapp.RequestHandler):
-  def post(self):
+  def get(self):
 
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], "cleanup"):
       
