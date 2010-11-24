@@ -491,7 +491,8 @@ class MailWorker(webapp.RequestHandler):
     effort = self.request.get('effort')
     projectId = self.request.get('projectId')
     description = self.request.get('description')
-    notification.send_notification(self.request.get('taskId'), self.request.get('currentUUID'), action, name, ttype, priority, status, validation, submitterId, assigneeId, effort, projectId, description)
+    server = self.request.url.replace(r'http://', "").replace(r'/mailer','')
+    notification.send_notification(server, self.request.get('taskId'), self.request.get('currentUUID'), action, name, ttype, priority, status, validation, submitterId, assigneeId, effort, projectId, description)
 
 
 def main():

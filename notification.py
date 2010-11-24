@@ -30,7 +30,7 @@ def should_notify(currentUserId, task, wantsNotifications = True):
     
   return retVal
 
-def send_notification(taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId, effort, projectId, description):
+def send_notification(url, taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId, effort, projectId, description):
   """sends email notification"""
   # Get information about this task and the assignee and submitter
   task = None;
@@ -73,7 +73,7 @@ def send_notification(taskId, currentUserId, action, name, ttype, priority, stat
         assignee = db.get(assignee_key)
     if submitter != None or assignee != None:
       
-      message = mail.EmailMessage(sender="Tasks Server <suvajit.gupta@eloqua.com>", subject="Task #%s %s by %s" % (taskId, action if name != "New Task" else "created", currentUser.name))
+      message = mail.EmailMessage(sender="Tasks Server <suvajit.gupta@eloqua.com>", subject="Task #%s %s by %s at %s" % (taskId, action if name != "New Task" else "created", currentUser.name, url))
       message.to = ';'; message.cc = ';';
       if assignee != None and assignee.email != '' and assignee.email != 'None' and assignee.email != None and assigneeId != currentUserId:
         message.to = "%s" % assignee.email
