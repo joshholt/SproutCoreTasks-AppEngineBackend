@@ -340,8 +340,10 @@ class LogoutHandler(webapp.RequestHandler):
 
 
 # Delete soft-deleted items and handle IDs referencing non-existent records
-# Example command line invocation that cleans up more than month-old soft-deleted data:
-# curl http://tasks-demo.appspot.com/tasks-server/cleanup\?UUID=10206\&ATO=87bbeaa756aedc28e3b31b27257bc9e6d63cea3d\&cutoff=1290302943001
+# Example command line invocation that cleans up more than month-old soft-deleted data (default):
+#   curl http://tasks-demo.appspot.com/tasks-server/cleanup\?UUID=<id>\&ATO=<authToken>
+# To cleanup soft-deleted data older than a certain 'cutoff', append: \&cutoff=<timestamp>
+# If <timestamp> is set to 0, all soft-deleted records will be deleted
 class CleanupHandler(webapp.RequestHandler):
   def get(self):
 
@@ -350,12 +352,12 @@ class CleanupHandler(webapp.RequestHandler):
       now = int(time.time()*1000)
       
       # Delete soft-deleted records older than timestamp (if specified) or older than a month
-      cutoff = self.request.params['cutoff']
-      if cutoff == None or cutoff == '':
+      try:
+        cutoff = self.request.params['cutoff']
+        cutoff = int(cutoff)
+      except:
         # default to a cutoff time a month ago
         cutoff = now - helpers.MONTH_MILLISECONDS
-      else:
-        cutoff = int(cutoff)
     
       users_json = helpers.build_user_list_json(helpers.purge_soft_deleted_records(User.all(), cutoff), None)
       projects_json = helpers.build_project_list_json(helpers.purge_soft_deleted_records(Project.all(), cutoff))

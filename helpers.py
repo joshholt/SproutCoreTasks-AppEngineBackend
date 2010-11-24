@@ -14,7 +14,8 @@ MONTH_MILLISECONDS = 30*24*60*60*1000
 
 def purge_soft_deleted_records(list, cutoff):
   list.filter("status =", "deleted")
-  list.filter("updatedAt <", cutoff)
+  if(cutoff > 0):
+    list.filter("updatedAt <", cutoff)
   records_to_delete = list.fetch(MAX_RESULTS)
   db.delete(records_to_delete)
   return records_to_delete
