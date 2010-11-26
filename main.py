@@ -30,7 +30,7 @@ import helpers, notification
 
 class RecordsHandler(webapp.RequestHandler):
   
-  # Retrieve a list of all records.
+  # Retrieve a full or incremental (since last refresh) list of records.
   def get(self):
     
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
@@ -40,30 +40,33 @@ class RecordsHandler(webapp.RequestHandler):
     
       currentUserId = int(self.request.params['UUID'])
       if lastRetrievedAt == '':
+        # Get full list of non-soft-deleted records (invoked at GUI startup - first time it is run or if local storage is not used)
         users_json = helpers.build_user_list_json(helpers.extract_non_deleted_records(User.all()), currentUserId)
         projects_json = helpers.build_project_list_json(helpers.extract_non_deleted_records(Project.all()))
         tasks_json = helpers.build_task_list_json(helpers.extract_non_deleted_records(Task.all()))
         watches_json = helpers.build_watch_list_json(helpers.extract_non_deleted_records(Watch.all()))
         comments_json = helpers.build_comment_list_json(helpers.extract_non_deleted_records(Comment.all()))
       else:
+        # Get incremental list of records updated since last refresh
+        timestamp = int(lastRetrievedAt)
         q = User.all()
-        q.filter('updatedAt >', int(lastRetrievedAt))
+        q.filter('updatedAt >', timestamp)
         result = q.fetch(helpers.MAX_RESULTS)
         users_json = helpers.build_user_list_json(result, currentUserId)
         q = Project.all()
-        q.filter('updatedAt >', int(lastRetrievedAt))
+        q.filter('updatedAt >', timestamp)
         result = q.fetch(helpers.MAX_RESULTS)
         projects_json = helpers.build_project_list_json(result)
         q = Task.all()
-        q.filter('updatedAt >', int(lastRetrievedAt))
+        q.filter('updatedAt >', timestamp)
         result = q.fetch(helpers.MAX_RESULTS)
         tasks_json = helpers.build_task_list_json(result)
         q = Watch.all()
-        q.filter('updatedAt >', int(lastRetrievedAt))
+        q.filter('updatedAt >', timestamp)
         result = q.fetch(helpers.MAX_RESULTS)
         watches_json = helpers.build_watch_list_json(result)
         q = Comment.all()
-        q.filter('updatedAt >', int(lastRetrievedAt))
+        q.filter('updatedAt >', timestamp)
         result = q.fetch(helpers.MAX_RESULTS)
         comments_json = helpers.build_comment_list_json(result)
     
