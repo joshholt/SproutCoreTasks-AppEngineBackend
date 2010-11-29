@@ -73,7 +73,7 @@ def send_notification(url, taskId, currentUserId, action, name, ttype, priority,
         assignee = db.get(assignee_key)
     if submitter != None or assignee != None:
       
-      message = mail.EmailMessage(sender="Tasks Server <suvajit.gupta@eloqua.com>", subject="Task #%s %s by %s at %s" % (taskId, action if name != "New Task" else "created", currentUser.name, url))
+      message = mail.EmailMessage(sender="Tasks Server <suvajit.gupta@eloqua.com>", subject="Task #%s %s by '%s' at %s" % (taskId, action if name != "New Task" else "created", currentUser.name, url))
       message.to = ';'; message.cc = ';';
       if assignee != None and assignee.email != '' and assignee.email != 'None' and assignee.email != None and assigneeId != currentUserId:
         message.to = "%s" % assignee.email
