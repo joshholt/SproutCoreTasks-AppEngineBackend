@@ -66,8 +66,13 @@ def create_user(request, response, signup):
   if is_login_name_valid(user_json['loginName'], None):
     user = apply_json_to_model_instance(User(), user_json)
     if signup:
-      user.role = "_Guest"
       user.authToken = generate_auth_token()
+      # if first user, make a Manager
+      users = User.all().fetch(MAX_RESULTS)
+      if len(users) == 0:
+        user.role = "_Manager"
+      else:
+        user.role = "_Guest"
     user.put()
     guid = user.key().id_or_name()
     new_url = "/tasks-server/user/%s" % guid
