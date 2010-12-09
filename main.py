@@ -34,51 +34,91 @@ class RecordsHandler(webapp.RequestHandler):
   def get(self):
     
     if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
-      lastRetrievedAt = ''
-      if len(self.request.params) > 0:
-        lastRetrievedAt = self.request.params['lastRetrievedAt']
-    
+
       currentUserId = int(self.request.params['UUID'])
-      if lastRetrievedAt == '':
-        # Get full list of non-soft-deleted records (invoked at GUI startup - first time it is run or if local storage is not used)
-        users_json = helpers.build_user_list_json(helpers.extract_non_deleted_records(User.all()), currentUserId)
-        projects_json = helpers.build_project_list_json(helpers.extract_non_deleted_records(Project.all()))
-        tasks_json = helpers.build_task_list_json(helpers.extract_non_deleted_records(Task.all()))
-        watches_json = helpers.build_watch_list_json(helpers.extract_non_deleted_records(Watch.all()))
-        comments_json = helpers.build_comment_list_json(helpers.extract_non_deleted_records(Comment.all()))
-      else:
-        # Get incremental list of records updated since last refresh
+      users = User.all()
+      projects = Project.all()
+      tasks = Task.all()
+      watches = Watch.all()
+      comments = Comment.all()
+      
+      # If lastRetrievedAt is '', get full list of non-soft-deleted records (invoked at GUI startup - first time it is run or if local storage is not used)
+      # else get incremental list of records updated since last refresh
+      if len(self.request.params) > 0:
+        try:
+          lastRetrievedAt = self.request.params['lastRetrievedAt']
+        except:
+          lastRetrievedAt = ''
+        try:
+          loadDoneProjectData = self.request.params['loadDoneProjectData']
+        except:
+          loadDoneProjectData = 'false'
+      
+      if lastRetrievedAt != '':
+        query = 'updatedAt >'
         timestamp = int(lastRetrievedAt)
-        q = User.all()
-        q.filter('updatedAt >', timestamp)
-        result = q.fetch(helpers.MAX_RESULTS)
-        users_json = helpers.build_user_list_json(result, currentUserId)
-        q = Project.all()
-        q.filter('updatedAt >', timestamp)
-        result = q.fetch(helpers.MAX_RESULTS)
-        projects_json = helpers.build_project_list_json(result)
-        q = Task.all()
-        q.filter('updatedAt >', timestamp)
-        result = q.fetch(helpers.MAX_RESULTS)
-        tasks_json = helpers.build_task_list_json(result)
-        q = Watch.all()
-        q.filter('updatedAt >', timestamp)
-        result = q.fetch(helpers.MAX_RESULTS)
-        watches_json = helpers.build_watch_list_json(result)
-        q = Comment.all()
-        q.filter('updatedAt >', timestamp)
-        result = q.fetch(helpers.MAX_RESULTS)
-        comments_json = helpers.build_comment_list_json(result)
+        users.filter(query, timestamp)
+        users = users.fetch(helpers.MAX_RESULTS)
+        projects.filter(query, timestamp)
+        projects = projects.fetch(helpers.MAX_RESULTS)
+        tasks.filter(query, timestamp)
+        tasks = tasks.fetch(helpers.MAX_RESULTS)
+        watches.filter(query, timestamp)
+        watches = watches.fetch(helpers.MAX_RESULTS)
+        comments.filter(query, timestamp)
+        comments = comments.fetch(helpers.MAX_RESULTS)
+        
+      notDoneProjects = []
+      doneProjectIds = []
+      tasksInNotDoneProjects = []
+      tasksInDoneProjectIds = []
+      watchesOnTasksInNotDoneProjects = []
+      commentsOnTasksInNotDoneProjects = []
+      if loadDoneProjectData == 'false':
+        for project in projects:
+          if project.developmentStatus == '_Done':
+            doneProjectIds.append(project.key().id_or_name());
+          else:
+            notDoneProjects.append(project);
+        for task in tasks:
+          try:
+            idx = doneProjectIds.index(task.projectId)
+          except:
+            idx = -1
+          if idx == -1:
+            tasksInNotDoneProjects.append(task);
+          else:
+            tasksInDoneProjectIds.append(task.key().id_or_name());
+        for watch in watches:
+          try:
+            idx = tasksInDoneProjectIds.index(watch.taskId)
+          except:
+            idx = -1
+          if idx == -1:
+            watchesOnTasksInNotDoneProjects.append(watch);
+
+        for comment in comments:
+          try:
+            idx = tasksInDoneProjectIds.index(comment.taskId)
+          except:
+            idx = -1
+          if idx == -1:
+            commentsOnTasksInNotDoneProjects.append(comment);
+        
+      users_json = helpers.build_user_list_json(helpers.extract_non_deleted_records(users), currentUserId)
+      projects_json = helpers.build_project_list_json(helpers.extract_non_deleted_records(projects if loadDoneProjectData == 'true' else notDoneProjects))
+      tasks_json = helpers.build_task_list_json(helpers.extract_non_deleted_records(tasks if loadDoneProjectData == 'true' else tasksInNotDoneProjects))
+      watches_json = helpers.build_watch_list_json(helpers.extract_non_deleted_records(watches if loadDoneProjectData == 'true' else watchesOnTasksInNotDoneProjects))
+      comments_json = helpers.build_comment_list_json(helpers.extract_non_deleted_records(comments if loadDoneProjectData == 'true' else commentsOnTasksInNotDoneProjects))
     
-      result = {
-       "users": users_json,
-       "projects": projects_json,
-       "tasks": tasks_json,
-       "watches": watches_json,
-       "comments": comments_json
-      }
       records_json = {
-        "result": result
+        "result": {
+         "users": users_json,
+         "projects": projects_json,
+         "tasks": tasks_json,
+         "watches": watches_json,
+         "comments": comments_json
+        }
       }
     
       # Set the response content type and dump the json
