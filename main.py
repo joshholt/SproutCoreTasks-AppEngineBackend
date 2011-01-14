@@ -127,11 +127,11 @@ class RecordsHandler(webapp.RequestHandler):
     else:
       helpers.report_unauthorized_access(self.response)
 
-
 class UserHandler(webapp.RequestHandler):
   
   # If only loginName is provided as parameter: If specified loginName exists, return user information
   # If valid password is also passed as parameter: Authenticate user and return authToken as well
+  # TODO: [SG] support soft-deleted users for name uniqueness check and login (like in Persevere Server)
   def get(self):
     users_json = []
     self.response.headers['Content-Type'] = 'application/json'

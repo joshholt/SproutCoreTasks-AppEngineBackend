@@ -180,7 +180,7 @@ def build_comment_list_json(list):
 #-----------------------------------------------------------------------------
 # AUTHORIZATION
 #-----------------------------------------------------------------------------
-# TODO: tighten up control to match GUI - Guests can only delete tasks they submitted
+# TODO: [SG] tighten up control to match GUI - Guests can only delete tasks they submitted
 def authorized(userId, authToken, action):
   """This method checks the user's authToken against what's stored in the DB"""
   key = db.Key.from_path('User', int(userId))
