@@ -15,13 +15,13 @@ handlers:
   mime_type: text/html
 
 - url: /tasks
-  static_files: static/tasks/en/<build-number>/index.html
-  upload: static/tasks/en/<build-number>/index.html
+  static_files: static/tasks/en/build/index.html
+  upload: static/tasks/en/build/index.html
   mime_type: text/html
 
 - url: /
-  static_files: static/tasks/en/<build-number>/index.html
-  upload: static/tasks/en/<build-number>/index.html
+  static_files: static/tasks/en/build/index.html
+  upload: static/tasks/en/build/index.html
   mime_type: text/html
   
 - url: /static
