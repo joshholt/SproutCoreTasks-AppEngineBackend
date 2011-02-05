@@ -171,6 +171,9 @@ class UserHandler(webapp.RequestHandler):
       user = db.get(key)
       if not user == None:
         user_json = simplejson.loads(self.request.body)
+        # if user password hasn't been modified by GUI keep it the same as what is in the database
+        if user_json['password'] == "password":
+          user_json['password'] = user.password
         status = user_json.get('status')
         being_deleted = (status != None and status == 'deleted')
         if being_deleted or helpers.is_login_name_valid(user_json['loginName'], user):
@@ -183,6 +186,8 @@ class UserHandler(webapp.RequestHandler):
             helpers.report_unauthorized_access(self.response)
           user = helpers.apply_json_to_model_instance(user, user_json)
           user.put()
+          if user.password != None and len(user.password) != 0:
+            user_json['password'] = "password"
           self.response.headers['Content-Type'] = 'application/json'
           self.response.out.write(simplejson.dumps(user_json))
         else:
