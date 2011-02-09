@@ -28,6 +28,10 @@ from models import Comment
 # Helper Imports
 import helpers, notification
 
+# Customizable "Only Allow Manager Login": if set to True only users with a role of 'Manager' are allowed to log in (useful for "personal" Tasks installations)
+only_allow_manager_login = False
+
+
 class RecordsHandler(webapp.RequestHandler):
   
   # Retrieve a full or incremental (since last refresh) list of records.
@@ -144,10 +148,11 @@ class UserHandler(webapp.RequestHandler):
         if param_count == 1:
           users_json = [ helpers.build_user_json(result[0], False) ]
         elif param_count == 2:
-          if result[0].password == None or result[0].password == self.request.params['password'].strip().replace("\'",""):
-            result[0].authToken = helpers.generate_auth_token()
-            result[0].put()
-            users_json = [ helpers.build_user_json(result[0], True) ]
+          if only_allow_manager_login == False or result[0].role == "_Manager":
+            if result[0].password == None or result[0].password == self.request.params['password'].strip().replace("\'",""):
+              result[0].authToken = helpers.generate_auth_token()
+              result[0].put()
+              users_json = [ helpers.build_user_json(result[0], True) ]
       self.response.out.write(simplejson.dumps(users_json))
     else:
       self.response.set_status(400, "Invalid parameters")
