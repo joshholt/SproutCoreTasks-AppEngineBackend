@@ -37,7 +37,7 @@ class RecordsHandler(webapp.RequestHandler):
   # Retrieve a full or incremental (since last refresh) list of records.
   def get(self):
     
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
 
       currentUserId = int(self.request.params['UUID'])
       users = User.all()
@@ -161,7 +161,7 @@ class UserHandler(webapp.RequestHandler):
   def post(self):
     # Create a new user
     if len(self.request.params) > 0:
-      if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+      if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
         helpers.create_user(self.request, self.response, False)
       else:
         helpers.report_unauthorized_access(self.response)
@@ -171,7 +171,7 @@ class UserHandler(webapp.RequestHandler):
 
   # Update an existing user with a given id
   def put(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
       key = db.Key.from_path('User', int(guid))
       user = db.get(key)
       if not user == None:
@@ -206,7 +206,7 @@ class UserHandler(webapp.RequestHandler):
 class ProjectHandler(webapp.RequestHandler):
   # Create a new project
   def post(self):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
       project_json = simplejson.loads(self.request.body)
       project = helpers.apply_json_to_model_instance(Project(), project_json)
       project.save()
@@ -222,7 +222,7 @@ class ProjectHandler(webapp.RequestHandler):
 
   # Update an existing project with a given id
   def put(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
       key = db.Key.from_path('Project', int(guid))
       project = db.get(key)
       if not project == None:
@@ -240,7 +240,7 @@ class ProjectHandler(webapp.RequestHandler):
 class TaskHandler(webapp.RequestHandler):
   # Create a new task
   def post(self):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
       wantsNotifications = {"true": True, "false": False}.get(self.request.params['notify'].lower())
       task_json = simplejson.loads(self.request.body)
       logging.info(self.request.body)
@@ -267,7 +267,7 @@ class TaskHandler(webapp.RequestHandler):
 
   # Update an existing task with a given id
   def put(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
       key = db.Key.from_path('Task', int(guid))
       task = db.get(key)
       if task != None:
@@ -307,7 +307,7 @@ class TaskHandler(webapp.RequestHandler):
 class WatchHandler(webapp.RequestHandler):
   # Create a new watch
   def post(self):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
       watch_json = simplejson.loads(self.request.body)
       watch = helpers.apply_json_to_model_instance(Watch(), watch_json)
       watch.put()
@@ -323,7 +323,7 @@ class WatchHandler(webapp.RequestHandler):
 
   # Update an existing watch with a given id
   def put(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
       key = db.Key.from_path('Watch', int(guid))
       watch = db.get(key)
       if not watch == None:
@@ -341,7 +341,7 @@ class WatchHandler(webapp.RequestHandler):
 class CommentHandler(webapp.RequestHandler):
   # Create a new comment
   def post(self):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
       comment_json = simplejson.loads(self.request.body)
       comment = helpers.apply_json_to_model_instance(Comment(), comment_json)
       comment.save()
@@ -357,7 +357,7 @@ class CommentHandler(webapp.RequestHandler):
 
   # Update an existing comment with a given id
   def put(self, guid):
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], self.request.params['action']):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], self.request.params['action']):
       key = db.Key.from_path('Comment', int(guid))
       comment = db.get(key)
       if not comment == None:
@@ -379,7 +379,7 @@ class LogoutHandler(webapp.RequestHandler):
     key = db.Key.from_path('User', int(userId))
     user = db.get(key)
     if user != None:
-      if user.authToken == self.request.params['ATO']:
+      if user.authToken == self.request.params['authToken']:
         # clear out authentication token to indicate user was logged out
         user.authToken = None
         user.put()
@@ -394,13 +394,13 @@ class LogoutHandler(webapp.RequestHandler):
 
 # Delete soft-deleted items and handle IDs referencing non-existent records
 # Example command line invocation that cleans up more than month-old soft-deleted data (default):
-#   curl http://tasks-demo.appspot.com/tasks-server/cleanup\?UUID=<id>\&ATO=<authToken>
+#   curl http://tasks-demo.appspot.com/tasks-server/cleanup\?UUID=<id>\&authToken=<authToken>
 # To cleanup soft-deleted data older than a certain 'cutoff', append: \&cutoff=<timestamp>
 # If <timestamp> is set to 0, all soft-deleted records will be deleted
 class CleanupHandler(webapp.RequestHandler):
   def get(self):
 
-    if helpers.authorized(self.request.params['UUID'], self.request.params['ATO'], "cleanup"):
+    if helpers.authorized(self.request.params['UUID'], self.request.params['authToken'], "cleanup"):
       
       now = int(time.time()*1000)
       
