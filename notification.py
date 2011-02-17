@@ -13,21 +13,12 @@ from models import User, Task, Project
 
 def should_notify(currentUserId, task, wantsNotifications = True):
   """Determines if a notification should be sent"""
-  currentUserKey = db.Key.from_path('User', int(currentUserId))
-  currentUser = db.get(currentUserKey)
-  if task.submitterId != None:
-    submitterKey = db.Key.from_path('User', int(task.submitterId))
-    submitter = db.get(submitterKey)
-  if task.assigneeId != None:
-    assigneeKey = db.Key.from_path('User', int(task.assigneeId))
-    assignee = db.get(assigneeKey)
   if wantsNotifications == False or task.name == "New Task":
     retVal = False
   elif task.submitterId != None and int(currentUserId) == int(task.submitterId) and task.assigneeId != None and int(currentUserId) == int(task.assigneeId):
     retVal = False
   else:
     retVal = True
-    
   return retVal
 
 def send_notification(url, taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId, effort, projectId, description):
