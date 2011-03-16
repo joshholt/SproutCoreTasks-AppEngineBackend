@@ -50,6 +50,7 @@ def send_notification(url, taskId, currentUserId, action, name, ttype, priority,
   if(len(watcherEmails) != 0):
     watcherSendList = '; '.join(watcherEmails)
     
+  message = None
   if action == "deleted" or task != None:
     submitter = None; assignee = None;
     if action == "deleted" or (task != None and task.submitterId != None):
@@ -144,9 +145,10 @@ def send_notification(url, taskId, currentUserId, action, name, ttype, priority,
         oldDescription = newDescription
       message.body += "\nDescription:\n%s\n" % oldDescription if action == "deleted" or newDescription == oldDescription else "\nDescription:\n%s\n\n=>\n\n%s\n" % (oldDescription, newDescription)
 
-    if watcherSendList != '':
-      message.cc += watcherSendList if message.cc == ';' else "; %s" % watcherSendList
-    if message.to == ';' and message.cc != ';':
-      message.to = message.cc; message.cc = ';'
-    if message.to != ';' or message.cc != ';':
-      message.send()
+    if message != None:
+      if watcherSendList != '':
+        message.cc += watcherSendList if message.cc == ';' else "; %s" % watcherSendList
+      if message.to == ';' and message.cc != ';':
+        message.to = message.cc; message.cc = ';'
+      if message.to != ';' or message.cc != ';':
+        message.send()
