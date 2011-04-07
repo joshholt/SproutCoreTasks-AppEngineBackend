@@ -33,7 +33,7 @@ import helpers, notification
 # Customizable "Only Allow Manager Login": if set to True only users with a role of 'Manager' are allowed to log in (useful for "personal" Tasks installations)
 only_allow_manager_login = False
 
-# Send email to an address like suvajit@tasks-demo.appspotmail.com
+# Send email to server@tasks-demo.appspotmail.com
 class LogSenderHandler(InboundMailHandler):
   def receive(self, mail_message):
     logging.info("Message sender: " + mail_message.sender)
