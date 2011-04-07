@@ -9,13 +9,15 @@
 import logging
 import sys
 import os
-import datetime
-import time
+import time, datetime
+import email
 import wsgiref.handlers
+from google.appengine.api import mail
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from django.utils import simplejson
 from google.appengine.api.labs import taskqueue
+from google.appengine.ext.webapp.mail_handlers import InboundMailHandler
 
 # Data Model Imports
 import models
@@ -31,6 +33,22 @@ import helpers, notification
 # Customizable "Only Allow Manager Login": if set to True only users with a role of 'Manager' are allowed to log in (useful for "personal" Tasks installations)
 only_allow_manager_login = False
 
+# Send email to an address like suvajit@tasks-demo.appspotmail.com
+class LogSenderHandler(InboundMailHandler):
+  def receive(self, mail_message):
+    logging.info("Message sender: " + mail_message.sender)
+    logging.info("Message to: " + mail_message.to)
+    logging.info("Message date: " + mail_message.date)
+    logging.info("Message subject: " + mail_message.subject)
+    description = ''
+    for content_type, body in mail_message.bodies('text/plain'):
+      description = body.decode()
+      logging.info("Message body:\n" + description)
+    
+    now = int(time.mktime(datetime.datetime.utcnow().timetuple())*1000)
+    task = Task(name=mail_message.subject, description=description, createdAt=now, updatedAt=now)
+    task.put()
+    
 
 class RecordsHandler(webapp.RequestHandler):
   
@@ -130,6 +148,7 @@ class RecordsHandler(webapp.RequestHandler):
       self.response.out.write(simplejson.dumps(records_json))
     else:
       helpers.report_unauthorized_access(self.response)
+
 
 class UserHandler(webapp.RequestHandler):
   
@@ -565,7 +584,8 @@ def main():
     (r'/tasks-server/comment/([^\.]+)?$', CommentHandler),
     (r'/tasks-server/logout', LogoutHandler),
     (r'/tasks-server/cleanup', CleanupHandler),
-    (r'/mailer', MailWorker)],debug=True)
+    (r'/mailer', MailWorker),
+    LogSenderHandler.mapping()],debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
 

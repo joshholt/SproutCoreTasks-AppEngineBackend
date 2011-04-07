@@ -38,3 +38,9 @@ handlers:
 
 - url: /.*
   script: main.py
+
+- url: /_ah/mail/.+
+  script: main.py
+
+inbound_services:
+- mail

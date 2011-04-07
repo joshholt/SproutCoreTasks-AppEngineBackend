@@ -4,7 +4,6 @@
     Author: Joshua Holt
     Author: Suvajit Gupta
 """
-import time,datetime
 #from google.appengine.api import xmpp # importing this lib allows jabber chat messages to be sent.
 from google.appengine.api import mail
 from google.appengine.ext import db
