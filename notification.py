@@ -4,6 +4,7 @@
     Author: Joshua Holt
     Author: Suvajit Gupta
 """
+import logging
 #from google.appengine.api import xmpp # importing this lib allows jabber chat messages to be sent.
 from google.appengine.api import mail
 from google.appengine.ext import db
@@ -12,22 +13,30 @@ from models import User, Task, Project
 
 def should_notify(currentUserId, task, wantsNotifications = True):
   """Determines if a notification should be sent"""
+  cid = int(currentUserId);
   if wantsNotifications == False or task.name == "New Task":
     retVal = False
-  elif task.submitterId != None and int(currentUserId) == int(task.submitterId) and task.assigneeId != None and int(currentUserId) == int(task.assigneeId):
+  elif task.submitterId != None and cid == task.submitterId and task.assigneeId != None and cid == task.assigneeId:
     retVal = False
   else:
     retVal = True
+  # logging.info("currentUserId: " + currentUserId)
+  # if task.submitterId != None:
+  #   logging.info("submitterId: " + str(task.submitterId))
+  # if task.assigneeId != None:
+  #   logging.info("assigneeId: " + str(task.assigneeId))
+  # logging.info("should_notify: " + str(retVal))
   return retVal
 
 def send_notification(url, taskId, currentUserId, action, name, ttype, priority, status, validation, submitterId, assigneeId, effort, projectId, description):
   """sends email notification"""
   # Get information about this task and the assignee and submitter
   task = None;
+  cid = int(currentUserId);
   if action != "deleted":
     task_key = db.Key.from_path('Task', int(taskId))
     task = db.get(task_key)
-  currentUser_key = db.Key.from_path('User', int(currentUserId))
+  currentUser_key = db.Key.from_path('User', cid)
   currentUser = db.get(currentUser_key)
   
   # get all watches for task (like user authentication in main.py)
@@ -67,9 +76,9 @@ def send_notification(url, taskId, currentUserId, action, name, ttype, priority,
       # Customizable - replace email address below with your email address to have email notifications sent using that address
       message = mail.EmailMessage(sender="Tasks Server <suvajit.gupta@eloqua.com>", subject="Task #%s %s by '%s' at %s" % (taskId, action if name != "New Task" else "created", currentUser.name, url))
       message.to = ';'; message.cc = ';';
-      if assignee != None and assignee.email != '' and assignee.email != 'None' and assignee.email != None and assigneeId != currentUserId:
+      if assignee != None and assignee.email != '' and assignee.email != 'None' and assignee.email != None and aid != cid:
         message.to = "%s" % assignee.email
-      if submitter != None and submitter.email != '' and submitter.email != 'None' and submitter.email != None and submitterId != currentUserId:
+      if submitter != None and submitter.email != '' and submitter.email != 'None' and submitter.email != None and sid != cid:
         message.cc = "%s" % submitter.email
       
       newName = task.name if task != None and task.name != None else "Unspecified"
@@ -145,6 +154,7 @@ def send_notification(url, taskId, currentUserId, action, name, ttype, priority,
         oldDescription = newDescription
       message.body += "\nDescription:\n%s\n" % oldDescription if action == "deleted" or newDescription == oldDescription else "\nDescription:\n%s\n\n=>\n\n%s\n" % (oldDescription, newDescription)
 
+    # logging.info("message.to: " + message.to + ", message.cc: " + message.cc)
     if message != None:
       if watcherSendList != '':
         message.cc += watcherSendList if message.cc == ';' else "; %s" % watcherSendList

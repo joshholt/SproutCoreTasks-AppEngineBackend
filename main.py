@@ -36,10 +36,10 @@ only_allow_manager_login = False
 # Send email to server@tasks-demo.appspotmail.com
 class LogSenderHandler(InboundMailHandler):
   def receive(self, mail_message):
-    logging.info("Message sender: " + mail_message.sender)
-    logging.info("Message to: " + mail_message.to)
-    logging.info("Message date: " + mail_message.date)
-    logging.info("Message subject: " + mail_message.subject)
+    # logging.info("Message sender: " + mail_message.sender)
+    # logging.info("Message to: " + mail_message.to)
+    # logging.info("Message date: " + mail_message.date)
+    # logging.info("Message subject: " + mail_message.subject)
     description = ''
     for content_type, body in mail_message.bodies('text/plain'):
       description = body.decode()
